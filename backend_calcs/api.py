@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+@app.get("/")
+def read_root():
+    return {"status": "ok", "docs": "/docs"}
+
 # Allow the React dev server to call us during development
 app.add_middleware(
     CORSMiddleware,
