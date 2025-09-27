@@ -1,0 +1,6 @@
+cat > public/projections.json << 'EOF'
+[
+  { "id": "patrick-mahomes", "ppr": 22.1, "median": 21, "ceiling": 35, "floor": 12 },
+  { "id": "christian-mccaffrey", "ppr": 24.8, "median": 23, "ceiling": 40, "floor": 10.5 }
+]
+EOF
