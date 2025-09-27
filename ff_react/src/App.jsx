@@ -7,7 +7,8 @@ export default function App() {
   const [b, setB] = useState("");
 
   useEffect(() => {
-    Promise.all([fetch("/players.json"), fetch("/projections.json")])
+   Promise.all([fetch("/api/players"), fetch("/api/projections")])
+
       .then(([p, pr]) => Promise.all([p.json(), pr.json()]))
       .then(([ps, projs]) => {
         setPlayers(ps || []);
