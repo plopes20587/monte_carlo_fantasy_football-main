@@ -1,6 +1,4 @@
-cat > public/players.json << 'EOF'
 [
   { "id": "patrick-mahomes", "name": "Patrick Mahomes", "team": "KC", "position": "QB" },
   { "id": "christian-mccaffrey", "name": "Christian McCaffrey", "team": "SF", "position": "RB" }
 ]
-EOF

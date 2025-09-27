@@ -59,7 +59,6 @@ export default function App() {
             <div>Projected PPR</div><div>{A.ppr ?? "-"}</div><div>{B.ppr ?? "-"}</div>
             <div>Median</div><div>{A.median ?? "-"}</div><div>{B.median ?? "-"}</div>
             <div>Ceiling</div><div>{A.ceiling ?? "-"}</div><div>{B.ceiling ?? "-"}</div>
-            <div>Floor</div><div>{A.floor ?? "-"}</div><div>{B.floor ?? "-"}</div>
           </div>
         )}
       </div>
