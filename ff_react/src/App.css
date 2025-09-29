@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -33,10 +34,131 @@
   }
 }
 
-.card {
-  padding: 2em;
-}
 
 .read-the-docs {
   color: #888;
+}
+
+:root{
+  --card-bg:#none;
+  --card-border:#e5e7eb;
+  --card-shadow:0 1px 2px rgba(0,0,0,0.04);
+  --text-muted:#fff;
+  --title:#fff;
+}
+
+*{ box-sizing:border-box; }
+
+.page{
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 16px;
+}
+
+.title{
+  margin: 0;
+  color: var(--title);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+
+.selectors{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.selectors select{
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: none;
+}
+
+.content{
+  margin-top: 20px;
+
+}
+
+.empty{
+  color: var(--text-muted);
+}
+
+.two-col{
+  display: grid;
+  grid-template-columns: 1fr 1.45fr; /* chart wider */
+  gap: 16px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+.card{
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--card-shadow);
+  text-align: left;
+}
+
+.card-title{
+  font-weight: 600;
+  margin-bottom: 24px;
+  font-size: 1.25rem;
+}
+
+.muted{
+  opacity: .7;
+}
+
+.compare-grid{
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.row-label{
+  text-transform: capitalize;
+}
+
+/* Chart area sizing */
+.chart-card{ min-height: 340px; }
+.chart-wrap{ width: 100%; height: 340px; }
+
+/* Make all SVG text inside the chart light */
+.chart-card .recharts-text tspan { 
+  fill: #e5e7eb !important;   /* slate-200 */
+}
+
+/* Nice to have on dark cards */
+.chart-card {
+  background: #0f172a;        /* slate-900 */
+  color: #e5e7eb;
+}
+
+/* Axis/grid contrast */
+.chart-card .recharts-cartesian-grid line { stroke: rgba(255,255,255,0.08); }
+.chart-card .recharts-cartesian-axis line { stroke: rgba(148,163,184,0.4); }
+.chart-card .recharts-cartesian-axis-tick line { stroke: rgba(148,163,184,0.4); }
+
+/* Legend + tooltip text */
+.chart-card .recharts-legend-item-text { color: #e5e7eb !important; }
+.chart-card .recharts-default-tooltip {
+  background: rgba(15,23,42,0.95) !important;
+  border: 1px solid rgba(148,163,184,0.35) !important;
+  color: #e5e7eb !important;
+}
+
+.recharts-text{
+  margin: 200px;
+}
+
+/* Mobile */
+@media (max-width: 900px){
+  .two-col{ grid-template-columns: 1fr; }
+  .chart-wrap{ height: 320px; }
 }

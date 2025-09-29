@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
+import "./App.css";
 
 /* ---------- helpers ---------- */
 const fmt = (v) => {
   if (v === null || v === undefined || v === "" || v === "NaN") return "-";
-  if (typeof v === "number") return Number.isInteger(v) ? v : v.toFixed(1);
   const n = Number(v);
-  if (!Number.isNaN(n)) return Number.isInteger(n) ? n : n.toFixed(1);
-  return String(v);
+  if (!Number.isFinite(n)) return String(v);
+  return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 };
 
 function parseHalfPPR(jsonStr) {
@@ -55,9 +53,7 @@ function mergeSeries(seriesA, seriesB, keyA = "A", keyB = "B") {
   const stepAt = (series, x) => {
     if (!series || series.length === 0) return null;
     let y = null;
-    for (const d of series) {
-      if (d.x <= x) y = d.y; else break;
-    }
+    for (const d of series) { if (d.x <= x) y = d.y; else break; }
     return y;
   };
 
@@ -118,9 +114,7 @@ export default function App() {
     }
     const preferred = ["ppr", "median", "ceiling", "pass_tds"];
     const presentPreferred = preferred.filter((k) => s.has(k));
-    const rest = [...s]
-      .filter((k) => !presentPreferred.includes(k) && !k.startsWith("chart_source_"))
-      .sort();
+    const rest = [...s].filter((k) => !presentPreferred.includes(k) && !k.startsWith("chart_source_")).sort();
     return [...presentPreferred, ...rest];
   }, [projections]);
 
@@ -138,22 +132,22 @@ export default function App() {
   );
 
   if (loading) {
-    return <div style={{ maxWidth: 1100, margin: "40px auto", padding: 16 }}>Loading…</div>;
+    return <div className="page">Loading…</div>;
   }
   if (err) {
-    return (
-      <div style={{ maxWidth: 1100, margin: "40px auto", padding: 16, color: "crimson" }}>
-        Error: {err}
-      </div>
-    );
+    return <div className="page" style={{ color: "crimson" }}>Error: {err}</div>;
   }
 
+  // Static colors for now; we can wire team colors later.
+  const strokeA = "#2563eb"; // blue
+  const strokeB = "#ef4444"; // red
+
   return (
-    <div style={{ maxWidth: 1100, margin: "40px auto", padding: 16 }}>
-      <h1>NFL Player Compare</h1>
+    <div className="page">
+      <h1 className="title">NFL Player Compare</h1>
 
       {/* Selectors */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+      <div className="selectors">
         <select value={a} onChange={(e) => setA(e.target.value)}>
           <option value="">Select Player A</option>
           {players.map((p) => (
@@ -174,42 +168,17 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div style={{ marginTop: 20 }}>
+      <div className="content">
         {!A || !B ? (
-          <div>Select two players.</div>
+          <div className="empty">Select two players.</div>
         ) : (
-          <div
-            className="two-col"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 1fr",
-              gap: 16,
-              alignItems: "start",
-              marginTop: 8,
-            }}
-          >
+          <div className="two-col">
             {/* LEFT: table card */}
-            <div
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                padding: 16,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                background: "#000",
-              }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.1fr 1fr 1fr",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
+            <div className="card">
+              <div className="compare-grid">
                 <div></div>
                 <strong>{label(A.id)}</strong>
                 <strong>{label(B.id)}</strong>
-
                 {allKeys.map((k) => (
                   <FragmentRow key={k} title={k} a={A[k]} b={B[k]} />
                 ))}
@@ -217,41 +186,35 @@ export default function App() {
             </div>
 
             {/* RIGHT: chart card */}
-            <div
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                padding: 16,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                background: "#fff",
-                minHeight: 340,
-              }}
-            >
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Half-PPR Distribution</div>
-
+            <div className="card chart-card">
+              <div className="card-title">Half-PPR Distribution</div>
               {!aSeries && !bSeries ? (
-                <div style={{ opacity: 0.7 }}>No half-PPR histogram available for either player.</div>
+                <div className="muted">No half-PPR histogram available for either player.</div>
               ) : (
-                <div style={{ width: "100%", height: 300 }}>
+                <div className="chart-wrap">
                   <ResponsiveContainer>
-                    <LineChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
+                    <LineChart data={chartData} margin={{ top: 8, right: 24, left: 4, bottom: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="x"
-                        label={{ value: "Half-PPR Points", position: "insideBottom", offset: -5 }}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        tickFormatter={(v) => `${v}%`}
-                        label={{ value: "Cumulative %", angle: -90, position: "insideLeft" }}
-                      />
++  <XAxis
+ dataKey="x"tick={{ fill: "#e5e7eb" }} axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+label={{ value: "Half-PPR Points", position: "insideBottom", offset: -4, fill: "#e5e7eb" }}
+/>
+<YAxis
+domain={[0, 100]}
+tickFormatter={(v) => `${v}%`}
+tick={{ fill: "#e5e7eb" }}
+axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+label={{ value: "Cumulative %", angle: -90, position: "insideLeft", fill: "#e5e7eb" }}
+ />
                       <Tooltip
                         formatter={(value) => (value == null ? "-" : `${Number(value).toFixed(1)}%`)}
                         labelFormatter={(v) => `Pts: ${v}`}
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="A" name={label(A.id)} dot={false} />
-                      <Line type="monotone" dataKey="B" name={label(B.id)} dot={false} />
+                      <Line type="monotone" dataKey="A" name={label(A.id)} dot={false} strokeWidth={3} stroke={strokeA} activeDot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="B" name={label(B.id)} dot={false} strokeWidth={3} stroke={strokeB} activeDot={{ r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -268,7 +231,7 @@ export default function App() {
 function FragmentRow({ title, a, b }) {
   return (
     <>
-      <div style={{ textTransform: "capitalize" }}>{title.replace(/_/g, " ")}</div>
+      <div className="row-label">{title.replace(/_/g, " ")}</div>
       <div>{fmt(a)}</div>
       <div>{fmt(b)}</div>
     </>

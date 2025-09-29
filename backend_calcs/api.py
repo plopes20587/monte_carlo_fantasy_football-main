@@ -179,3 +179,20 @@ def get_projections():
     if not _PROJECTIONS:
         raise HTTPException(500, "projections not loaded")
     return _PROJECTIONS
+
+@app.get("/players_with_stats")
+def players_with_stats():
+    _ensure_fresh_data()
+    by_id = {p["id"]: p for p in _PLAYERS}
+    merged = []
+    for proj in _PROJECTIONS:
+        m = {**by_id.get(proj["id"], {}), **proj}
+        merged.append(m)
+    return merged
+
+@app.get("/projection_columns")
+def projection_columns():
+    _ensure_fresh_data()
+    import pandas as pd
+    df = pd.read_csv(TABLE_CSV, nrows=1)
+    return [c for c in df.columns if c != "player"]
