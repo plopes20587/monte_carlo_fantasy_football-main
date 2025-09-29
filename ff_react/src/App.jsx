@@ -131,6 +131,22 @@ export default function App() {
     [aSeries, bSeries]
   );
 
+  // derive nice [min,max] rounded to /5 and a ticks array every 5 pts
+const { xMin, xMax, xTicks } = useMemo(() => {
+  if (!chartData.length) return { xMin: 0, xMax: 0, xTicks: [] };
+  const xs = chartData.map(d => d.x).filter(n => Number.isFinite(n));
+  const min = Math.min(...xs);
+  const max = Math.max(...xs);
+  const roundDown5 = (n) => Math.floor(n / 5) * 5;
+  const roundUp5   = (n) => Math.ceil(n / 5) * 5;
+  const lo = roundDown5(min);
+  const hi = roundUp5(max);
+  const ticks = [];
+  for (let t = lo; t <= hi; t += 5) ticks.push(t);
+  return { xMin: lo, xMax: hi, xTicks: ticks };
+}, [chartData]);
+
+
   if (loading) {
     return <div className="page">Loading…</div>;
   }
@@ -145,7 +161,24 @@ export default function App() {
   return (
     <div className="page">
       <h1 className="title">NFL Player Compare</h1>
+{/* Intro / hero */}
+<div className="hero">
+  <p className="subtitle">
+    Compare two NFL players using median, ceiling, and half-PPR outcome distributions.
+  </p>
 
+  <ul className="steps">
+    <li><span className="step-dot">1</span> Pick <strong>Player A</strong> and <strong>Player B</strong> below.</li>
+    <li><span className="step-dot">2</span> Review the <strong>stat table</strong> on the left.</li>
+    <li><span className="step-dot">3</span> Use the <strong>distribution chart</strong> to gauge upside and risk.</li>
+  </ul>
+
+  <div className="badges">
+    <span className="badge">Live data</span>
+    <span className="badge">Half-PPR</span>
+    <span className="badge">From CSV</span>
+  </div>
+</div>
       {/* Selectors */}
       <div className="selectors">
         <select value={a} onChange={(e) => setA(e.target.value)}>
@@ -196,30 +229,33 @@ export default function App() {
                <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 4 }}  // ← extra space so labels never clip
 >
                       <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
+                        <XAxis
+                          type="number"
                           dataKey="x"
+                          domain={[xMin, xMax]}
+                          ticks={xTicks}
+                          allowDecimals={false}
+                          tickMargin={0}
                           tick={{ fill: "#e5e7eb" }}
                           axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
                           tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                          tickMargin={20}                             // ← more gap between tick mark and numbers
-                          label={{ value: "Half-PPR Points", position: "insideBottom", offset: 18, fill: "#e5e7eb" }} // ← more gap to axis label
+                          label={{ value: "Half-PPR Points", position: "insideBottom", offset: -12, fill: "#e5e7eb" }}
                         />
-
                         <YAxis
                           domain={[0, 100]}
                           tickFormatter={(v) => `${v}%`}
                           tick={{ fill: "#e5e7eb" }}
                           axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
                           tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                          tickMargin={20}                             // ← space between y tick line and numbers
-                          label={{ value: "Cumulative %", angle: -90, position: "insideLeft", offset: 48, fill: "#e5e7eb" }} // ← gap to y-axis label
+                          tickMargin={0}                             // ← space between y tick line and numbers
+                          label={{ value: "Cumulative %", angle: -90, position: "insideLeft", offset: 8, fill: "#e5e7eb" }} // ← gap to y-axis label
                         />
 
                       <Tooltip
                         formatter={(value) => (value == null ? "-" : `${Number(value).toFixed(1)}%`)}
                         labelFormatter={(v) => `Pts: ${v}`}
                       />
-                      <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 16 }} />
+                      <Legend verticalAlign="bottom" align="center" wrapperStyle={{ bottom: -32 }} />
                       <Line type="monotone" dataKey="A" name={label(A.id)} dot={false} strokeWidth={3} stroke={strokeA} activeDot={{ r: 4 }} />
                       <Line type="monotone" dataKey="B" name={label(B.id)} dot={false} strokeWidth={3} stroke={strokeB} activeDot={{ r: 4 }} />
                     </LineChart>
