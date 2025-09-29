@@ -56,10 +56,10 @@
 }
 
 .title{
-  margin: 0;
+  margin: 40px;
   color: var(--title);
   font-weight: 700;
-  font-size: 24px;
+  font-size: 2.5rem;
   letter-spacing: -0.01em;
 }
 
@@ -89,7 +89,7 @@
 
 .two-col{
   display: grid;
-  grid-template-columns: 1fr 1.45fr; /* chart wider */
+  grid-template-columns: 1fr 1.75fr; /* chart wider */
   gap: 16px;
   align-items: start;
   margin-top: 8px;
@@ -153,9 +153,11 @@
   color: #e5e7eb !important;
 }
 
-.recharts-text{
-  margin: 200px;
+/* Keep light text */
+.chart-card .recharts-text tspan { 
+  fill: #e5e7eb !important;
 }
+
 
 /* Mobile */
 @media (max-width: 900px){

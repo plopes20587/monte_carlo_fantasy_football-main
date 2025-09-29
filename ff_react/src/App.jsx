@@ -193,26 +193,33 @@ export default function App() {
               ) : (
                 <div className="chart-wrap">
                   <ResponsiveContainer>
-                    <LineChart data={chartData} margin={{ top: 8, right: 24, left: 4, bottom: 8 }}>
+               <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 4 }}  // ← extra space so labels never clip
+>
                       <CartesianGrid strokeDasharray="3 3" />
-+  <XAxis
- dataKey="x"tick={{ fill: "#e5e7eb" }} axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
-tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-label={{ value: "Half-PPR Points", position: "insideBottom", offset: -4, fill: "#e5e7eb" }}
-/>
-<YAxis
-domain={[0, 100]}
-tickFormatter={(v) => `${v}%`}
-tick={{ fill: "#e5e7eb" }}
-axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
-tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-label={{ value: "Cumulative %", angle: -90, position: "insideLeft", fill: "#e5e7eb" }}
- />
+                          <XAxis
+                          dataKey="x"
+                          tick={{ fill: "#e5e7eb" }}
+                          axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                          tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                          tickMargin={20}                             // ← more gap between tick mark and numbers
+                          label={{ value: "Half-PPR Points", position: "insideBottom", offset: 18, fill: "#e5e7eb" }} // ← more gap to axis label
+                        />
+
+                        <YAxis
+                          domain={[0, 100]}
+                          tickFormatter={(v) => `${v}%`}
+                          tick={{ fill: "#e5e7eb" }}
+                          axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                          tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                          tickMargin={20}                             // ← space between y tick line and numbers
+                          label={{ value: "Cumulative %", angle: -90, position: "insideLeft", offset: 48, fill: "#e5e7eb" }} // ← gap to y-axis label
+                        />
+
                       <Tooltip
                         formatter={(value) => (value == null ? "-" : `${Number(value).toFixed(1)}%`)}
                         labelFormatter={(v) => `Pts: ${v}`}
                       />
-                      <Legend />
+                      <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 16 }} />
                       <Line type="monotone" dataKey="A" name={label(A.id)} dot={false} strokeWidth={3} stroke={strokeA} activeDot={{ r: 4 }} />
                       <Line type="monotone" dataKey="B" name={label(B.id)} dot={false} strokeWidth={3} stroke={strokeB} activeDot={{ r: 4 }} />
                     </LineChart>
