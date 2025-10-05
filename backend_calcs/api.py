@@ -1,198 +1,86 @@
 # backend_calcs/api.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any, Optional, Tuple
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from pathlib import Path
-import time, re, json
-import pandas as pd  # pip install pandas
+import json
+from functools import lru_cache
 
-app = FastAPI(title="FF API (dynamic CSV)")
+app = FastAPI(title="Monte Carlo Fantasy Football API", version="1.0.0")
 
-# Allow Vite dev server
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=["*"],  # tighten in prod
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---- Config ----
-HERE = Path(__file__).parent
-TABLE_CSV = HERE / "table_setup.csv"   # adjust if your file sits elsewhere
+DATA_DIR = Path(__file__).parent / "data"
+PLAYERS_PATH = DATA_DIR / "players.json"
+PROJ_DIR = DATA_DIR / "projections"
 
-# ---- In-memory cache + mtime tracking (3.9-compatible types) ----
-_PLAYERS: List[Dict[str, Any]] = []
-_PROJECTIONS: List[Dict[str, Any]] = []
-_TABLE_MTIME: Optional[float] = None
+# ---------- Models
 
-# ---- Helpers ----
-def _slug(s: str) -> str:
-    s = (s or "").strip().lower()
-    return re.sub(r"[^a-z0-9]+", "_", s).strip("_")
+class Player(BaseModel):
+    id: str
+    name: str
+    team: str
+    position: str
 
-def _to_float(v):
-    try:
-        if v is None or (isinstance(v, float) and pd.isna(v)):
-            return None
-        return float(v)
-    except Exception:
-        return None
+class ChartPoint(BaseModel):
+    x: float
+    cdf: float = Field(ge=0.0, le=1.0)
 
-def _p90_from_hist(hist_json: str) -> Optional[float]:
-    """Try to derive a 90th percentile from chart_source_full_ppr if present."""
-    if not isinstance(hist_json, str) or not hist_json.strip():
-        return None
-    try:
-        arr = json.loads(hist_json)
-        # assume pct as 0..100 first
-        cum = 0.0
-        for b in arr:
-            cum += float(b.get("pct", 0))
-            if cum >= 90.0:
-                return float(b.get("pts"))
-        # fallback: pct 0..1
-        cum = 0.0
-        for b in arr:
-            cum += float(b.get("pct", 0))
-            if cum >= 0.9:
-                return float(b.get("pts"))
-    except Exception:
-        return None
-    return None
+class Projection(BaseModel):
+    ppr: Optional[float] = None
+    median: Optional[float] = None
+    ceiling: Optional[float] = None
+    pass_tds: Optional[float] = None
+    chart_source_half_ppr: List[ChartPoint] = []
 
-def _load_from_csv() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    if not TABLE_CSV.is_file() or TABLE_CSV.stat().st_size == 0:
-        raise FileNotFoundError(f"Cannot find non-empty {TABLE_CSV}")
+# ---------- File helpers + caches
 
-    df = pd.read_csv(TABLE_CSV)
+def _players_mtime() -> float:
+    # Return 0 if the file isn't there yet (lets / return ok and /players return [])
+    return PLAYERS_PATH.stat().st_mtime if PLAYERS_PATH.exists() else 0.0
 
-    if "player" not in df.columns:
-        raise ValueError(f"{TABLE_CSV.name} must include a 'player' column")
+@lru_cache(maxsize=1)
+def _load_players_cached(mtime: float) -> List[Player]:
+    # mtime is part of the cache key, so cache busts when the file changes
+    with PLAYERS_PATH.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+    return [Player(**p) for p in raw]
 
-    # Derive ceiling if the CSV doesn’t provide one, using histogram or common fallbacks
-    if "ceiling" not in df.columns:
-        if "chart_source_full_ppr" in df.columns:
-            df["ceiling"] = df["chart_source_full_ppr"].apply(
-                lambda x: _p90_from_hist(x) if pd.notna(x) else None
-            )
-        else:
-            for alt in ["p95", "p90", "total_score_full_ppr_p95", "total_score_full_ppr_p90", "total_score_full_ppr_max"]:
-                if alt in df.columns:
-                    df["ceiling"] = df[alt]
-                    break
+def _proj_path(pid: str) -> Path:
+    return PROJ_DIR / f"{pid}.json"
 
-    # Common columns
-    team_col   = next((c for c in ["team", "Team"] if c in df.columns), None)
-    pos_col    = next((c for c in ["position", "Pos", "Position"] if c in df.columns), None)
-    ppr_col    = next((c for c in ["total_score_full_ppr", "ppr"] if c in df.columns), None)
-    median_col = next((c for c in ["total_score_full_ppr_median", "median", "p50"] if c in df.columns), None)
-    ceiling_col = next((c for c in ["ceiling","p90","p95","total_score_full_ppr_p90","total_score_full_ppr_max"] if c in df.columns), None)
+@lru_cache(maxsize=512)
+def _load_projection_cached(pid: str, mtime: float) -> Projection:
+    # mtime in key => bust cache when that player's file changes
+    path = _proj_path(pid)
+    with path.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+    return Projection(**raw)
 
-    # Extra columns we want to expose AS-IS (numeric coerced; charts kept as strings)
-    selected_extra_cols = [
-        "pass_tds",
-        "player_pass_tds",
-        "player_pass_interceptions",
-        "player_rush_or_rec_tds",
-        "player_reception_yds",
-        "player_rush_yds",
-        "player_receptions",
-        "player_pass_yds",
-        "chart_source_half_ppr",  # histogram JSON string (do NOT coerce to float)
-    ]
-    existing_extra_cols = [c for c in selected_extra_cols if c in df.columns]
+# ---------- Routes
 
-    # Build /players
-    players: List[Dict[str, Any]] = []
-    for _, row in df.iterrows():
-        name = str(row["player"])
-        pid  = _slug(name)
-        item: Dict[str, Any] = {"id": pid, "name": name}
-        if team_col and pd.notna(row.get(team_col)):
-            item["team"] = str(row.get(team_col))
-        if pos_col and pd.notna(row.get(pos_col)):
-            item["position"] = str(row.get(pos_col))
-        players.append(item)
+@app.get("/", tags=["health"])
+def health():
+    # Expose a data version number for quick debugging
+    ver = int(_players_mtime()) if PLAYERS_PATH.exists() else 0
+    return {"ok": True, "data_version": ver}
 
-    # Build /projections
-    projections: List[Dict[str, Any]] = []
-    for _, row in df.iterrows():
-        name = str(row["player"])
-        pid  = _slug(name)
-        item: Dict[str, Any] = {"id": pid}
-
-        if ppr_col:     item["ppr"]     = _to_float(row.get(ppr_col))
-        if median_col:  item["median"]  = _to_float(row.get(median_col))
-        if ceiling_col: item["ceiling"] = _to_float(row.get(ceiling_col))
-
-        for col in existing_extra_cols:
-            val = row.get(col)
-            # Keep histogram JSON columns as strings; numeric stats -> float
-            if isinstance(val, str) and col.startswith("chart_source_"):
-                item[col] = val
-            else:
-                item[col] = _to_float(val)
-
-        projections.append(item)
-
-    return players, projections
-
-def _ensure_fresh_data() -> None:
-    """Reload CSV if the file changed since last load."""
-    global _TABLE_MTIME, _PLAYERS, _PROJECTIONS
-    try:
-        mtime = TABLE_CSV.stat().st_mtime
-    except FileNotFoundError:
-        raise HTTPException(500, f"CSV not found: {TABLE_CSV}")
-    if _TABLE_MTIME is None or mtime > _TABLE_MTIME:
-        _PLAYERS, _PROJECTIONS = _load_from_csv()
-        _TABLE_MTIME = mtime
-        print(f"[reload] {TABLE_CSV.name} @ {time.strftime('%H:%M:%S')} (rows: players={len(_PLAYERS)} projections={len(_PROJECTIONS)})")
-
-# ---- FastAPI lifecycle & endpoints ----
-@app.on_event("startup")
-def _startup():
-    _ensure_fresh_data()
-
-@app.get("/")
-def root():
-    _ensure_fresh_data()
-    return {"status": "ok", "docs": "/docs"}
-
-@app.post("/reload")
-def manual_reload():
-    """Optional: force reload via POST /reload"""
-    old = _TABLE_MTIME
-    _ensure_fresh_data()
-    return {"reloaded": _TABLE_MTIME != old, "csv": str(TABLE_CSV)}
-
-@app.get("/players")
+@app.get("/players", response_model=List[Player], tags=["players"])
 def get_players():
-    _ensure_fresh_data()
-    if not _PLAYERS:
-        raise HTTPException(500, "players not loaded")
-    return _PLAYERS
+    if not PLAYERS_PATH.exists():
+        return []  # or raise 503 if you prefer
+    return _load_players_cached(_players_mtime())
 
-@app.get("/projections")
-def get_projections():
-    _ensure_fresh_data()
-    if not _PROJECTIONS:
-        raise HTTPException(500, "projections not loaded")
-    return _PROJECTIONS
-
-@app.get("/players_with_stats")
-def players_with_stats():
-    _ensure_fresh_data()
-    by_id = {p["id"]: p for p in _PLAYERS}
-    merged = []
-    for proj in _PROJECTIONS:
-        m = {**by_id.get(proj["id"], {}), **proj}
-        merged.append(m)
-    return merged
-
-@app.get("/projection_columns")
-def projection_columns():
-    _ensure_fresh_data()
-    import pandas as pd
-    df = pd.read_csv(TABLE_CSV, nrows=1)
-    return [c for c in df.columns if c != "player"]
+@app.get("/projections", response_model=Projection, tags=["projections"])
+def get_projection(player_id: str = Query(..., min_length=1)):
+    p = _proj_path(player_id)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"No projections for player_id={player_id}")
+    return _load_projection_cached(player_id, p.stat().st_mtime)
