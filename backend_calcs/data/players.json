@@ -1,4 +1,170 @@
 [
-  { "id": "pm-001", "name": "Patrick Mahomes", "team": "KC", "position": "QB" },
-  { "id": "jj-001", "name": "Justin Jefferson", "team": "MIN", "position": "WR" }
+  {
+    "id": "amon-ra-st-brown",
+    "name": "Amon-Ra St. Brown",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "braxton-berrios",
+    "name": "Braxton Berrios",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "calvin-ridley",
+    "name": "Calvin Ridley",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "chigoziem-okonkwo",
+    "name": "Chigoziem Okonkwo",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "dk-metcalf",
+    "name": "DK Metcalf",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "david-montgomery",
+    "name": "David Montgomery",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "de-von-achane",
+    "name": "De'Von Achane",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "deandre-hopkins",
+    "name": "DeAndre Hopkins",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "durham-smythe",
+    "name": "Durham Smythe",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "geno-smith",
+    "name": "Geno Smith",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "jahmyr-gibbs",
+    "name": "Jahmyr Gibbs",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "jameson-williams",
+    "name": "Jameson Williams",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "jared-goff",
+    "name": "Jared Goff",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "jaxon-smith-njigba",
+    "name": "Jaxon Smith-Njigba",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "jaylen-waddle",
+    "name": "Jaylen Waddle",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "jonnu-smith",
+    "name": "Jonnu Smith",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "josh-whyle",
+    "name": "Josh Whyle",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "kenneth-walker-iii",
+    "name": "Kenneth Walker III",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "noah-fant",
+    "name": "Noah Fant",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "sam-laporta",
+    "name": "Sam LaPorta",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "tony-pollard",
+    "name": "Tony Pollard",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "tyjae-spears",
+    "name": "Tyjae Spears",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "tyler-boyd",
+    "name": "Tyler Boyd",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "tyler-huntley",
+    "name": "Tyler Huntley",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "tyler-lockett",
+    "name": "Tyler Lockett",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "tyreek-hill",
+    "name": "Tyreek Hill",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "will-levis",
+    "name": "Will Levis",
+    "team": "",
+    "position": ""
+  },
+  {
+    "id": "zach-charbonnet",
+    "name": "Zach Charbonnet",
+    "team": "",
+    "position": ""
+  }
 ]

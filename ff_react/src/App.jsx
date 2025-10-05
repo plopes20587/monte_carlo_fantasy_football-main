@@ -1,5 +1,5 @@
+// ff_react/src/App.jsx
 import { useEffect, useMemo, useState } from "react";
-import PropTypes from "prop-types";
 import {
   LineChart,
   Line,
@@ -11,13 +11,19 @@ import {
   Legend,
 } from "recharts";
 import "./App.css";
-// DEV proxy in vite.config.js should map /api -> http://localhost:8000
+import PropTypes from "prop-types";
+
+
+/** API base
+ *  - Dev: relies on Vite proxy (/api -> http://127.0.0.1:8000)
+ *  - Prod: set VITE_API_BASE in .env.production
+ */
 const API_BASE = import.meta.env.PROD
   ? (import.meta.env.VITE_API_BASE || "")
   : "/api";
 
+/* ---------------- helpers ---------------- */
 
-/* ---------- helpers ---------- */
 const fmt = (v) => {
   if (v === null || v === undefined || v === "" || v === "NaN") return "-";
   const n = Number(v);
@@ -71,7 +77,8 @@ function ticks5(min, max) {
   return out;
 }
 
-/* ---------- row component ---------- */
+/* -------------- small UI piece -------------- */
+
 function FragmentRow({ title, a, b }) {
   return (
     <>
@@ -82,13 +89,16 @@ function FragmentRow({ title, a, b }) {
   );
 }
 
+// add this right after the component
 FragmentRow.propTypes = {
   title: PropTypes.string.isRequired,
-  a: PropTypes.oneOfType([PropTypes.number, PropTypes.string, PropTypes.oneOf([null])]),
-  b: PropTypes.oneOfType([PropTypes.number, PropTypes.string, PropTypes.oneOf([null])]),
+  a: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  b: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
 
-/* ---------- main component ---------- */
+
+/* ------------------- App ------------------- */
+
 export default function App() {
   const [players, setPlayers] = useState([]);
   const [a, setA] = useState("");
@@ -101,7 +111,7 @@ export default function App() {
   const [loadingProj, setLoadingProj] = useState(false);
   const [error, setError] = useState("");
 
-  // Load players once
+  // Load players on mount
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -112,29 +122,41 @@ export default function App() {
         if (!r.ok) throw new Error(`Players: ${r.status}`);
         const data = await r.json();
         if (!ignore) setPlayers(Array.isArray(data) ? data : []);
-} catch (e) {
-  console.error("Failed to load projections:", e);
-  if (!ignore) setError("Could not load projections. Try different players or check the API.");
-}finally {
+      } catch (e) {
+        console.error("Failed to load players:", e);
+        if (!ignore) setError("Could not load players.");
+      } finally {
         if (!ignore) setLoadingPlayers(false);
       }
     })();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  // Load projections when A/B change (guard against empty)
+  // Auto-select the first two players once loaded (for instant data)
+  useEffect(() => {
+    if (players.length >= 2 && !a && !b) {
+      setA(players[0].id);
+      setB(players[1].id);
+    }
+  }, [players]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load projections when selections change (guard against empty)
   useEffect(() => {
     let ignore = false;
+
     const load = async (id) => {
       const r = await fetch(`${API_BASE}/projections?player_id=${encodeURIComponent(id)}`);
       if (!r.ok) throw new Error(`Projections: ${r.status}`);
       return r.json();
     };
+
     (async () => {
       if (!a && !b) {
         setProjA(null);
         setProjB(null);
-        return; // ← prevent 422s
+        return; // prevent /projections without player_id
       }
       setLoadingProj(true);
       setError("");
@@ -147,16 +169,19 @@ export default function App() {
         setProjA(pA);
         setProjB(pB);
       } catch (e) {
-  console.error("Failed to load players:", e);
-  if (!ignore) setError("Could not load players.");
-} finally {
+        console.error("Failed to load projections:", e);
+        if (!ignore) setError("Could not load projections. Try different players or check the API.");
+      } finally {
         if (!ignore) setLoadingProj(false);
       }
     })();
-    return () => { ignore = true; };
+
+    return () => {
+      ignore = true;
+    };
   }, [a, b]);
 
-  // Labels
+  // Labels for legend/table
   const label = (id) => {
     const meta = players.find((x) => x.id === id);
     if (!meta) return id || "";
@@ -164,7 +189,7 @@ export default function App() {
     return affix ? `${meta.name} (${affix})` : meta.name;
   };
 
-  // Table fields (explicit, stable)
+  // Table fields (explicit)
   const statKeys = ["ppr", "median", "ceiling", "pass_tds"];
 
   // Chart prep
@@ -209,7 +234,7 @@ export default function App() {
 
       {/* Selectors */}
       <div className="selectors">
-        <select value={a} onChange={(e) => setA(e.target.value)} disabled={loadingPlayers}>
+        <select value={a} onChange={(e) => setA(e.target.value)} disabled={loadingPlayers} aria-label="Select Player A">
           <option value="">{loadingPlayers ? "Loading players…" : "Select Player A"}</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
@@ -218,7 +243,7 @@ export default function App() {
           ))}
         </select>
 
-        <select value={b} onChange={(e) => setB(e.target.value)} disabled={loadingPlayers}>
+        <select value={b} onChange={(e) => setB(e.target.value)} disabled={loadingPlayers} aria-label="Select Player B">
           <option value="">{loadingPlayers ? "Loading players…" : "Select Player B"}</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
@@ -234,7 +259,7 @@ export default function App() {
           <div className="empty">Select two players.</div>
         ) : (
           <div className="two-col">
-            {/* LEFT: table card */}
+            {/* LEFT: table */}
             <div className="card">
               {loadingProj ? (
                 <div className="muted">Loading projections…</div>
@@ -250,7 +275,7 @@ export default function App() {
               )}
             </div>
 
-            {/* RIGHT: chart card */}
+            {/* RIGHT: chart */}
             <div className="card chart-card">
               <div className="card-title">Half-PPR Distribution</div>
               {loadingProj ? (
@@ -285,7 +310,9 @@ export default function App() {
                       />
                       <Tooltip
                         formatter={(value, name) =>
-                          value == null ? "-" : [`${Number(value).toFixed(1)}%`, name === "A" ? label(a) : label(b)]
+                          value == null
+                            ? "-"
+                            : [`${Number(value).toFixed(1)}%`, name === "A" ? label(a) : label(b)]
                         }
                         labelFormatter={(v) => `Pts: ${v}`}
                       />
@@ -300,6 +327,11 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* TEMP DEBUG: comment out when satisfied */}
+      {/* <pre style={{background:"#111", color:"#aaa", padding:8, borderRadius:8}}>
+{JSON.stringify({ count: players.length, a, b, hasProjA: !!projA, hasProjB: !!projB }, null, 2)}
+</pre> */}
     </div>
   );
 }

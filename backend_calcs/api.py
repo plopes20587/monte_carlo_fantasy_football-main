@@ -84,3 +84,36 @@ def get_projection(player_id: str = Query(..., min_length=1)):
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"No projections for player_id={player_id}")
     return _load_projection_cached(player_id, p.stat().st_mtime)
+
+@lru_cache(maxsize=512)
+def _load_projection_cached(pid: str, mtime: float) -> Projection:
+    path = _proj_path(pid)
+    with path.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+
+    # --- normalize & sanitize chart points ---
+    pts = []
+    for item in raw.get("chart_source_half_ppr", []):
+        try:
+            x = float(item.get("x"))
+            cdf = float(item.get("cdf"))
+            # If CSV/JSON stored percentages (0..100), convert to probability (0..1)
+            if cdf > 1:
+                cdf = cdf / 100.0
+            # keep only finite & in-range
+            if 0.0 <= cdf <= 1.0:
+                pts.append({"x": x, "cdf": cdf})
+        except Exception:
+            continue
+    pts.sort(key=lambda d: d["x"])
+    raw["chart_source_half_ppr"] = pts
+
+    # (Optional) coerce top-level numeric fields if they were strings
+    for k in ("ppr", "median", "ceiling", "pass_tds"):
+        if k in raw and raw[k] not in (None, ""):
+            try:
+                raw[k] = float(raw[k])
+            except Exception:
+                raw[k] = None
+
+    return Projection(**raw)
