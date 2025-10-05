@@ -22,6 +22,7 @@ const API_BASE = import.meta.env.PROD
   ? (import.meta.env.VITE_API_BASE || "")
   : (import.meta.env.VITE_API_BASE || "/api");
 
+
 /* ---------------- formatting helper ---------------- */
 
 const fmt = (v) => {
@@ -300,42 +301,43 @@ export default function App() {
   };
 
   // Rows + matching rules (regex include/exclude) against FLATTENED keys
-  const STAT_ROWS = [
-    // headline rows
-    {
-      label: "ppr",
-      rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
-    },
-    {
-      label: "median",
-      rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },
-    },
-    {
-      label: "ceiling",
-      rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },
-    },
-    {
-      label: "pass tds",
-      rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
-    },
+const STAT_ROWS = [
+  // headline rows
+  {
+    label: "ppr",
+    rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
+  },
+  {
+    label: "median",
+    rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },
+  },
+  {
+    label: "ceiling",
+    rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },
+  },
+  {
+    label: "pass tds",
+    rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
+  },
 
-    // added stat lines
-    { label: "pass INTs",       rules: { include: [/interception|^ints?$/], exclude: [/sample|chart/] } },
-    { label: "rush/rec TDs",    rules: { include: [/(rush|rushing|rec(eiv|ept))/, /td/], exclude: [/pass|sample|chart/] } },
-    { label: "reception yards", rules: { include: [/(receiv|recept|rec)\w*/, /yard/], exclude: [/rush|pass|sample|chart/] } },
-    { label: "rush yards",      rules: { include: [/rush|rushing/, /yard/], exclude: [/rec|pass|sample|chart/] } },
-    { label: "receptions",      rules: { include: [/^receptions?$|^rec$/], exclude: [/yard|td|sample|chart/] } },
-    { label: "pass yards",      rules: { include: [/pass|passing/, /yard/], exclude: [/rec|rush|sample|chart/] } },
+  // added stat lines
+  { label: "pass INTs",       rules: { include: [/interception|^ints?$/], exclude: [/sample|chart/] } },
+  { label: "rush/rec TDs",    rules: { include: [/(rush|rushing|rec(eiv|ept))/, /td/], exclude: [/pass|sample|chart/] } },
+  { label: "reception yards", rules: { include: [/(receiv|recept|rec)\w*/, /(yard|yds?)/], exclude: [/rush|pass|sample|chart/] } },
+  { label: "rush yards",      rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
+  { label: "receptions",      rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
+  { label: "pass yards",      rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
 
-    // scoring buckets (distinct)
-    { label: "full-PPR points", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
-    { label: "half-PPR points", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
-    { label: "no-PPR points",   rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
+  // scoring buckets (distinct)
+  { label: "full-PPR points", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
+  { label: "half-PPR points", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
+  { label: "no-PPR points",   rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
 
-    { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } },
-    { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } },
-    { label: "no-PPR median",   rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } },
-  ];
+  { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } },
+  { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } },
+  { label: "no-PPR median",   rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } },
+];
+
 
   // Build table row values via regex resolver on the FLATTENED keys
   const tableRows = STAT_ROWS.map(({ label: rowLabel, rules }) => {

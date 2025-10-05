@@ -1,121 +1,69 @@
-# backend_calcs/api.py
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from fastapi.responses import JSONResponse  # ✅ ADD THIS LINE
 from pathlib import Path
+import csv
 import json
-from functools import lru_cache
+import pandas as pd
 
 app = FastAPI()
 
 
+# Load projections.json
+with open("backend_calcs/data/projections.json") as f:
+    projections = json.load(f)
+
+# Load table_setup.csv
+df_table = pd.read_csv("backend_calcs/data/table_setup.csv")
+
+# Normalize IDs (dash-slug)
+def normalize_id(name):
+    return name.strip().lower().replace(" ", "_").replace("-", "_")
+
+# Map table_setup.csv by normalized player name
+table_data = {
+    normalize_id(row["player"]): row.to_dict()
+    for _, row in df_table.iterrows()
+}
+
+with open("backend_calcs/data/players.json") as f:
+    players = json.load(f)
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten later
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 DATA_DIR = Path(__file__).parent / "data"
-PLAYERS_PATH = DATA_DIR / "players.json"
-PROJ_DIR = DATA_DIR / "projections"
 
-# ---------- Models
+@app.get("/projections")
+def get_projection(player_id: str = Query(...)):
+    slug_id = player_id.lower().strip()
+    underscore_id = slug_id.replace("-", "_")
 
-class Player(BaseModel):
-    id: str
-    name: str
-    team: str
-    position: str
+    # Find base projection
+    proj = next((p for p in projections if normalize_id(p["id"]) == underscore_id), None)
+    if not proj:
+        return JSONResponse(status_code=404, content={"error": "Player not found in projections.json"})
 
-class ChartPoint(BaseModel):
-    x: float
-    cdf: float = Field(ge=0.0, le=1.0)
+    # Merge in extra stats from table_setup.csv
+    table_stats = table_data.get(underscore_id, {})
+    full_data = {**proj, **table_stats, "id": slug_id}
 
-class Projection(BaseModel):
-    ppr: Optional[float] = None
-    median: Optional[float] = None
-    ceiling: Optional[float] = None
-    pass_tds: Optional[float] = None
-    chart_source_half_ppr: List[ChartPoint] = []
-
-# ---------- File helpers + caches
-
-def _players_mtime() -> float:
-    # Return 0 if the file isn't there yet (lets / return ok and /players return [])
-    return PLAYERS_PATH.stat().st_mtime if PLAYERS_PATH.exists() else 0.0
-
-@lru_cache(maxsize=1)
-def _load_players_cached(mtime: float) -> List[Player]:
-    # mtime is part of the cache key, so cache busts when the file changes
-    with PLAYERS_PATH.open("r", encoding="utf-8") as f:
-        raw = json.load(f)
-    return [Player(**p) for p in raw]
-
-def _proj_path(pid: str) -> Path:
-    return PROJ_DIR / f"{pid}.json"
-
-@lru_cache(maxsize=512)
-def _load_projection_cached(pid: str, mtime: float) -> Projection:
-    # mtime in key => bust cache when that player's file changes
-    path = _proj_path(pid)
-    with path.open("r", encoding="utf-8") as f:
-        raw = json.load(f)
-    return Projection(**raw)
-
-# ---------- Routes
-
-@app.get("/", tags=["health"])
-def health():
-    # Expose a data version number for quick debugging
-    ver = int(_players_mtime()) if PLAYERS_PATH.exists() else 0
-    return {"ok": True, "data_version": ver}
-
-@app.get("/players", response_model=List[Player], tags=["players"])
-def get_players():
-    if not PLAYERS_PATH.exists():
-        return []  # or raise 503 if you prefer
-    return _load_players_cached(_players_mtime())
-
-@app.get("/projections", response_model=Projection, tags=["projections"])
-def get_projection(player_id: str = Query(..., min_length=1)):
-    p = _proj_path(player_id)
-    if not p.exists():
-        raise HTTPException(status_code=404, detail=f"No projections for player_id={player_id}")
-    return _load_projection_cached(player_id, p.stat().st_mtime)
-
-@lru_cache(maxsize=512)
-def _load_projection_cached(pid: str, mtime: float) -> Projection:
-    path = _proj_path(pid)
-    with path.open("r", encoding="utf-8") as f:
-        raw = json.load(f)
-
-    # --- normalize & sanitize chart points ---
-    pts = []
-    for item in raw.get("chart_source_half_ppr", []):
-        try:
-            x = float(item.get("x"))
-            cdf = float(item.get("cdf"))
-            # If CSV/JSON stored percentages (0..100), convert to probability (0..1)
-            if cdf > 1:
-                cdf = cdf / 100.0
-            # keep only finite & in-range
-            if 0.0 <= cdf <= 1.0:
-                pts.append({"x": x, "cdf": cdf})
-        except Exception:
-            continue
-    pts.sort(key=lambda d: d["x"])
-    raw["chart_source_half_ppr"] = pts
-
-    # (Optional) coerce top-level numeric fields if they were strings
-    for k in ("ppr", "median", "ceiling", "pass_tds"):
-        if k in raw and raw[k] not in (None, ""):
+    # Coerce number-like strings into numbers, leave blanks as null
+    for k, v in full_data.items():
+        if isinstance(v, str):
             try:
-                raw[k] = float(raw[k])
-            except Exception:
-                raw[k] = None
+                full_data[k] = float(v)
+            except ValueError:
+                if v.strip() == "":
+                    full_data[k] = None
 
-    return Projection(**raw)
+    return full_data
+
+@app.get("/players")
+def get_players():
+    return players
