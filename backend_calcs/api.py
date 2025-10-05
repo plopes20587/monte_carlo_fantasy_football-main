@@ -9,13 +9,15 @@ from functools import lru_cache
 
 app = FastAPI()
 
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to your domain in production
+    allow_origins=["*"],  # tighten later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 DATA_DIR = Path(__file__).parent / "data"
 PLAYERS_PATH = DATA_DIR / "players.json"
