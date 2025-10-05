@@ -21,3 +21,13 @@ ff_react/dist/
 .vscode/
 .idea/
 Thumbs.db
+*.ipynb
+# logs & diagnostics
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# local env
+*.env.local
