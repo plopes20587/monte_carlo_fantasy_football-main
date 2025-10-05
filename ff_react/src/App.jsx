@@ -13,7 +13,6 @@ import {
 import "./App.css";
 import PropTypes from "prop-types";
 
-
 /** API base
  *  - Dev: relies on Vite proxy (/api -> http://127.0.0.1:8000)
  *  - Prod: set VITE_API_BASE in .env.production
@@ -31,8 +30,34 @@ const fmt = (v) => {
   return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 };
 
+// Build CDF (% 0–100) from raw sample values (use *all* values)
+function ecdfFromValues(values) {
+  if (!Array.isArray(values) || values.length === 0) return null;
+  const nums = values
+    .map((v) => (typeof v === "string" ? v.replace(/,/g, "").trim() : v))
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b);
+
+  if (!nums.length) return null;
+  const n = nums.length;
+  // Collapse to unique x with cumulative % at each unique value
+  const out = [];
+  let i = 0;
+  while (i < n) {
+    const x = nums[i];
+    // advance to last occurrence of x
+    let j = i;
+    while (j + 1 < n && nums[j + 1] === x) j++;
+    const countLeX = j + 1;
+    out.push({ x, y: (countLeX / n) * 100 });
+    i = j + 1;
+  }
+  return out;
+}
+
 // Convert backend chart array [{ x, cdf }] -> [{ x, y }] with y in 0–100%
-function toPercentSeries(arr) {
+function cdfPairsToPercentSeries(arr) {
   if (!Array.isArray(arr) || arr.length === 0) return null;
   const series = arr
     .map((d) => ({ x: Number(d.x), y: Number(d.cdf) }))
@@ -42,7 +67,29 @@ function toPercentSeries(arr) {
   return series.length ? series : null;
 }
 
-// Step-merge two series by union of x values
+// Flexible extractor: prefer full raw samples; else fall back to pre-computed CDF points
+function toPercentSeriesFromProjection(proj) {
+  if (!proj) return null;
+
+  // Try common raw fields (adjust names here if your backend uses a specific key)
+  const rawCandidates =
+    proj.raw_samples_half_ppr ||
+    proj.raw_values_half_ppr ||
+    proj.samples_half_ppr ||
+    proj.raw_points ||
+    proj.raw_values ||
+    proj.samples ||
+    proj.values;
+
+  const fromRaw = ecdfFromValues(rawCandidates);
+  if (fromRaw && fromRaw.length) return fromRaw;
+
+  // Fallback to existing CDF points
+  const fromPairs = cdfPairsToPercentSeries(proj.chart_source_half_ppr);
+  return fromPairs;
+}
+
+// Step-merge two series by union of x values (keeps *all* x's from both)
 function mergeSeries(seriesA, seriesB, keyA = "A", keyB = "B") {
   if (!seriesA && !seriesB) return [];
   const xs = new Set();
@@ -89,13 +136,11 @@ function FragmentRow({ title, a, b }) {
   );
 }
 
-// add this right after the component
 FragmentRow.propTypes = {
   title: PropTypes.string.isRequired,
   a: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   b: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
-
 
 /* ------------------- App ------------------- */
 
@@ -192,9 +237,9 @@ export default function App() {
   // Table fields (explicit)
   const statKeys = ["ppr", "median", "ceiling", "pass_tds"];
 
-  // Chart prep
-  const aSeries = useMemo(() => toPercentSeries(projA?.chart_source_half_ppr), [projA]);
-  const bSeries = useMemo(() => toPercentSeries(projB?.chart_source_half_ppr), [projB]);
+  // Chart prep — now uses ALL CSV values if backend sends raw samples, else falls back
+  const aSeries = useMemo(() => toPercentSeriesFromProjection(projA), [projA]);
+  const bSeries = useMemo(() => toPercentSeriesFromProjection(projB), [projB]);
   const chartData = useMemo(() => mergeSeries(aSeries, bSeries, "A", "B"), [aSeries, bSeries]);
 
   const { xMin, xMax, xTicks } = useMemo(() => {

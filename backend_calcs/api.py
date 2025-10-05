@@ -7,11 +7,11 @@ from pathlib import Path
 import json
 from functools import lru_cache
 
-app = FastAPI(title="Monte Carlo Fantasy Football API", version="1.0.0")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten in prod
+    allow_origins=["*"],  # tighten to your domain in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
