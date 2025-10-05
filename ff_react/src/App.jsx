@@ -176,7 +176,6 @@ const { xMin, xMax, xTicks } = useMemo(() => {
   <div className="badges">
     <span className="badge">Live data</span>
     <span className="badge">Half-PPR</span>
-    <span className="badge">From CSV</span>
   </div>
 </div>
       {/* Selectors */}
