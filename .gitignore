@@ -1,5 +1,3 @@
-# create (or overwrite) .gitignore
-cat > .gitignore <<'EOF'
 # macOS
 .DS_Store
 **/.DS_Store
@@ -40,7 +38,3 @@ ff_react/dist/
 .vscode/
 .idea/
 Thumbs.db
-EOF
-
-git add .gitignore
-git commit -m "chore: add .gitignore"
