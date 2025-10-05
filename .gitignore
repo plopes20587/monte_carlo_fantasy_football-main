@@ -1,6 +1,5 @@
 .DS_Store
 **/.DS_Store
-
 .venv/
 __pycache__/
 *.pyc
@@ -10,20 +9,15 @@ __pycache__/
 .eggs/
 build/
 dist/
-
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
-
 node_modules/
 **/node_modules/
 .vite/
-
 ff_react/dist/
-
 .env
 .env.*
 *.local
-
 .vscode/
 .idea/
 Thumbs.db
