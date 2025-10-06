@@ -1,29 +1,14 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-import json
+from supabase import create_client, Client
 
 app = FastAPI()
 
-BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data"
-PROJ_DIR = DATA_DIR / "projections"
+# Hardcoded credentials
+supabase_url = "https://bipllavdnhnenirrhjfc.supabase.co"
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q"
 
-# Lazy load players list
-players = []
-
-def load_players():
-    global players
-    if not players:
-        players_file = DATA_DIR / "players.json"
-        if not players_file.exists():
-            raise HTTPException(
-                status_code=500,
-                detail="Players data not found. Please run csv_to_json.py first."
-            )
-        with open(players_file) as f:
-            players = json.load(f)
-    return players
+supabase: Client = create_client(supabase_url, supabase_key)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,28 +17,93 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/projections")
-def get_projection(player_id: str = Query(...)):
-    # Normalize to dash format (what csv_to_json.py creates)
-    normalized_id = player_id.lower().strip().replace("_", "-")
-    
-    # Load individual projection file
-    proj_file = PROJ_DIR / f"{normalized_id}.json"
-    
-    if not proj_file.exists():
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Player projection not found: {player_id}"
-        )
-    
-    with open(proj_file) as f:
-        projection = json.load(f)
-    
-    # Ensure ID matches request format
-    projection["id"] = normalized_id
-    
-    return projection
+# ... rest of your code stays the same
 
 @app.get("/players")
 def get_players():
-    return load_players()
+    """Fetch all players from Supabase"""
+    try:
+        response = supabase.table("chart_source").select("id, player").execute()
+        
+        players = [
+            {
+                "id": str(row["id"]),
+                "name": row["player"],
+                "team": "",
+                "position": ""
+            }
+            for row in response.data
+        ]
+        
+        return players
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/projections")
+def get_projection(player_id: str = Query(...)):
+    """Fetch projection for a specific player from Supabase"""
+    try:
+        try:
+            numeric_id = int(player_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid player_id format: {player_id}"
+            )
+        
+        response = supabase.table("chart_source")\
+            .select("*")\
+            .eq("id", numeric_id)\
+            .execute()
+        
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Projection not found for player_id: {player_id}"
+            )
+        
+        data = response.data[0]
+        
+        # Transform chart data: convert pts/pct to x/cdf and make cumulative
+        def transform_chart_data(chart_data):
+            if not chart_data:
+                return []
+            
+            cumulative = 0.0
+            transformed = []
+            for point in chart_data:
+                cumulative += float(point.get("pct", 0))
+                transformed.append({
+                    "x": point.get("pts"),
+                    "cdf": cumulative / 100.0  # Convert to 0-1 range
+                })
+            return transformed
+        
+        return {
+            "id": str(data["id"]),
+            "player": data["player"],
+            "ppr": data.get("total_score_half_ppr"),
+            "median": data.get("total_score_half_ppr_median"),
+            "ceiling": None,
+            "pass_tds": data.get("pass_tds"),
+            "pass_interceptions": data.get("pass_interceptions"),
+            "rush_rec_tds": data.get("rush_or_rec_tds"),
+            "rushing_yards": data.get("rush_yds"),
+            "reception_yards": data.get("reception_yds"),
+            "receptions": data.get("receptions"),
+            "passing_yards": data.get("pass_yds"),
+            "total_score_full_ppr": data.get("total_score_full_ppr"),
+            "total_score_full_ppr_median": data.get("total_score_full_ppr_median"),
+            "total_score_half_ppr": data.get("total_score_half_ppr"),
+            "total_score_half_ppr_median": data.get("total_score_half_ppr_median"),
+            "total_score_no_ppr": data.get("total_score_no_ppr"),
+            "total_score_no_ppr_median": data.get("total_score_no_ppr_median"),
+            "chart_source_half_ppr": transform_chart_data(data.get("chart_source_half_ppr", [])),
+            "chart_source_full_ppr": transform_chart_data(data.get("chart_source_full_ppr", [])),
+            "chart_source_no_ppr": transform_chart_data(data.get("chart_source_no_ppr", []))
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
