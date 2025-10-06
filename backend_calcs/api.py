@@ -9,9 +9,21 @@ BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 PROJ_DIR = DATA_DIR / "projections"
 
-# Load players list
-with open(DATA_DIR / "players.json") as f:
-    players = json.load(f)
+# Lazy load players list
+players = []
+
+def load_players():
+    global players
+    if not players:
+        players_file = DATA_DIR / "players.json"
+        if not players_file.exists():
+            raise HTTPException(
+                status_code=500,
+                detail="Players data not found. Please run csv_to_json.py first."
+            )
+        with open(players_file) as f:
+            players = json.load(f)
+    return players
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,4 +56,4 @@ def get_projection(player_id: str = Query(...)):
 
 @app.get("/players")
 def get_players():
-    return players
+    return load_players()
