@@ -3,6 +3,18 @@
   "median": 3.6,
   "ceiling": 1.0833333333333333,
   "pass_tds": 0.0,
+  "pass_interceptions": 0.0,
+  "rush_rec_tds": 0.4971,
+  "rushing_yards": 0.4462,
+  "reception_yards": 21.8273,
+  "receptions": 2.1128,
+  "passing_yards": 0.0,
+  "total_score_full_ppr": 7.32275,
+  "total_score_full_ppr_median": 4.6,
+  "total_score_half_ppr": 6.26635,
+  "total_score_half_ppr_median": 3.6,
+  "total_score_no_ppr": 5.20995,
+  "total_score_no_ppr_median": 2.2,
   "chart_source_half_ppr": [
     {
       "x": 0.0,

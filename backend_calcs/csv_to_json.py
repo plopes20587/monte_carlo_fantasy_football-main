@@ -52,6 +52,14 @@ def main():
     players = []
     seen_ids = set()
 
+    def to_num(v):
+        if v is None or v == '':
+            return None
+        try:
+            return float(v)
+        except Exception:
+            return None
+
     with CSV_PATH.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -74,21 +82,24 @@ def main():
                 "position": row.get("position", "") or ""
             })
 
-            def to_num(v):
-                try:
-                    return float(v)
-                except Exception:
-                    return None
-
-            # standard stats
+            # Extract stats - match your CSV columns EXACTLY
             pass_tds = to_num(row.get("player_pass_tds"))
+            pass_ints = to_num(row.get("player_pass_ints"))  # Fixed
+            rush_rec_tds = to_num(row.get("player_rush_rec_tds"))  # Fixed
             rush_yds = to_num(row.get("player_rush_yds"))
+            reception_yds = to_num(row.get("player_reception_yards"))
             receptions = to_num(row.get("player_receptions"))
             pass_yds = to_num(row.get("player_pass_yds"))
 
+            # Scoring stats
             mean_half = to_num(row.get("total_score_half_ppr"))
             median_half = to_num(row.get("total_score_half_ppr_median"))
+            mean_full = to_num(row.get("total_score_full_ppr"))
+            median_full = to_num(row.get("total_score_full_ppr_median"))
+            mean_no = to_num(row.get("total_score_no_ppr"))
+            median_no = to_num(row.get("total_score_no_ppr_median"))
 
+            # Parse chart data
             curve = parse_curve(row.get("chart_source_half_ppr") or "")
             chart_half = [{"x": x, "cdf": cdf} for (x, cdf) in curve]
             ceiling = percentile_from_survival(curve, tail=0.05)
@@ -98,9 +109,18 @@ def main():
                 "median": median_half,
                 "ceiling": ceiling,
                 "pass_tds": pass_tds,
+                "pass_interceptions": pass_ints,
+                "rush_rec_tds": rush_rec_tds,
                 "rushing_yards": rush_yds,
+                "reception_yards": reception_yds,
                 "receptions": receptions,
                 "passing_yards": pass_yds,
+                "total_score_full_ppr": mean_full,
+                "total_score_full_ppr_median": median_full,
+                "total_score_half_ppr": mean_half,
+                "total_score_half_ppr_median": median_half,
+                "total_score_no_ppr": mean_no,
+                "total_score_no_ppr_median": median_no,
                 "chart_source_half_ppr": chart_half
             }
 

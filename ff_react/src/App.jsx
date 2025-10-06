@@ -379,6 +379,8 @@ const STAT_ROWS = [
   const flatA = useMemo(() => (projA ? flattenObject(projA) : null), [projA]);
   const flatB = useMemo(() => (projB ? flattenObject(projB) : null), [projB]);
 
+  
+
   return (
     <div className="page">
       <h1 className="title">NFL Player Compare</h1>
@@ -463,9 +465,9 @@ const STAT_ROWS = [
               {!aSeries && !bSeries ? (
                 <div className="muted">No half-PPR distribution available.</div>
               ) : (
-                <div className="chart-wrap" style={{ width: "100%", height: 380 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 8, right: 24, left: 8, bottom: 16 }}>
+                <div className="chart-wrap" style={{ width: "100%", height: 450 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
                         type="number"
@@ -477,7 +479,7 @@ const STAT_ROWS = [
                         tick={{ fill: "#e5e7eb" }}
                         axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
                         tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        label={{ value: "Half-PPR Points", position: "insideBottom", offset: -8, fill: "#e5e7eb" }}
+                        label={{ value: "Half-PPR Points", position: "insideBottom", offset: -25, fill: "#e5e7eb" }}
                       />
                       <YAxis
                         domain={[0, 100]}
@@ -486,7 +488,7 @@ const STAT_ROWS = [
                         axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
                         tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
                         tickMargin={8}
-                        label={{ value: "Cumulative %", angle: -90, position: "insideLeft", offset: 8, fill: "#e5e7eb" }}
+                        label={{ value: "Cumulative %", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
                       />
                       <Tooltip
                         formatter={(value, name) =>
@@ -494,25 +496,22 @@ const STAT_ROWS = [
                         }
                         labelFormatter={(v) => `Pts: ${v}`}
                       />
-                      <Legend verticalAlign="bottom" align="center" wrapperStyle={{ bottom: -8 }} />
+                        <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 60 }} />
 
-                      {Number.isFinite(aMedian) && (
-                        <ReferenceLine
-                          x={aMedian}
-                          stroke={strokeA}
-                          strokeDasharray="4 4"
-                          label={{ value: `${(players.find(p => p.id === a)?.name || "A").split(" ")[0]} median`, position: "top", fill: "#e5e7eb" }}
-                        />
-                      )}
-                      {Number.isFinite(bMedian) && (
-                        <ReferenceLine
-                          x={bMedian}
-                          stroke={strokeB}
-                          strokeDasharray="4 4"
-                          label={{ value: `${(players.find(p => p.id === b)?.name || "B").split(" ")[0]} median`, position: "top", fill: "#e5e7eb" }}
-                        />
-                      )}
-
+                        {Number.isFinite(aMedian) && (
+                          <ReferenceLine
+                            x={aMedian}
+                            stroke={strokeA}
+                            strokeDasharray="4 4"
+                          />
+                        )}
+                        {Number.isFinite(bMedian) && (
+                          <ReferenceLine
+                            x={bMedian}
+                            stroke={strokeB}
+                            strokeDasharray="4 4"
+                          />
+                        )}
                       <Line type="monotone" dataKey="A" name={label(a)} dot={false} strokeWidth={3} stroke={strokeA} activeDot={{ r: 4 }} />
                       <Line type="monotone" dataKey="B" name={label(b)} dot={false} strokeWidth={3} stroke={strokeB} activeDot={{ r: 4 }} />
                     </LineChart>
