@@ -64,18 +64,17 @@ def get_projection(player_id: str = Query(...)):
         
         data = response.data[0]
         
-        # Transform chart data: convert pts/pct to x/cdf and make cumulative
+        # Transform chart data: pts/pct to x/y (probability mass, not cumulative)
+        # Transform chart data: pts/pct to x/y (convert percentage to simulation counts)
         def transform_chart_data(chart_data):
             if not chart_data:
                 return []
-            
-            cumulative = 0.0
             transformed = []
             for point in chart_data:
-                cumulative += float(point.get("pct", 0))
+                # Multiply pct by 100 to convert from percentage to counts (out of 10,000 simulations)
                 transformed.append({
                     "x": point.get("pts"),
-                    "cdf": cumulative / 100.0  # Convert to 0-1 range
+                    "y": float(point.get("pct", 0)) * 100
                 })
             return transformed
         

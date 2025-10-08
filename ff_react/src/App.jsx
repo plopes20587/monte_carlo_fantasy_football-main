@@ -34,80 +34,14 @@ const fmt = (v) => {
     : n.toLocaleString(undefined, { maximumFractionDigits: 3 });
 };
 
-/* ---------------- Half-PPR ECDF helpers ---------------- */
+/* ---------------- ticks helper ---------------- */
 
-function ecdfFromValues(values) {
-  if (!Array.isArray(values) || values.length === 0) return null;
-  const nums = values
-    .map((v) => (typeof v === "string" ? v.replace(/,/g, "").trim() : v))
-    .map((v) => Number(v))
-    .filter((n) => Number.isFinite(n))
-    .sort((a, b) => a - b);
-  if (!nums.length) return null;
-  const n = nums.length;
-  const out = [];
-  for (let i = 0; i < n; ) {
-    const x = nums[i];
-    let j = i;
-    while (j + 1 < n && nums[j + 1] === x) j++;
-    out.push({ x, y: ((j + 1) / n) * 100 });
-    i = j + 1;
-  }
-  return out;
-}
-
-function cdfPairsToPercentSeries(arr) {
-  if (!Array.isArray(arr) || arr.length === 0) return null;
-  const series = arr
-    .map((d) => ({ x: Number(d.x), y: Number(d.cdf) }))
-    .filter((d) => Number.isFinite(d.x) && Number.isFinite(d.y))
-    .sort((a, b) => a.x - b.x)
-    .map((d) => ({ x: d.x, y: Math.max(0, Math.min(100, d.y <= 1 ? d.y * 100 : d.y)) }));
-  return series.length ? series : null;
-}
-
-function halfPprSeriesFromProjection(proj) {
-  if (!proj) return null;
-  const rawCandidates =
-    proj.raw_values_half_ppr ||
-    proj.samples_half_ppr ||
-    proj.total_score_half_ppr_samples ||
-    proj.raw_total_score_half_ppr;
-  const fromRaw = ecdfFromValues(rawCandidates);
-  if (fromRaw && fromRaw.length) return fromRaw;
-  return cdfPairsToPercentSeries(proj.chart_source_half_ppr);
-}
-
-function mergeSeries(seriesA, seriesB, keyA = "A", keyB = "B") {
-  if (!seriesA && !seriesB) return [];
-  const xs = new Set();
-  (seriesA || []).forEach((d) => xs.add(d.x));
-  (seriesB || []).forEach((d) => xs.add(d.x));
-  const xVals = Array.from(xs).sort((a, b) => a - b);
-
-  const stepAt = (series, x) => {
-    if (!series || series.length === 0) return null;
-    let y = null;
-    for (const d of series) {
-      if (d.x <= x) y = d.y;
-      else break;
-    }
-    return y;
-  };
-
-  return xVals.map((x) => ({
-    x,
-    [keyA]: stepAt(seriesA, x),
-    [keyB]: stepAt(seriesB, x),
-  }));
-}
-
-function ticks5(min, max) {
+function ticksEvery1(min, max) {
   if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
-  const lo = Math.floor(min / 5) * 5;
-  const hi = Math.ceil(max / 5) * 5;
+  const lo = Math.floor(min);
+  const hi = Math.ceil(max);
   const out = [];
-  for (let t = lo; t <= hi; t += 5) out.push(t);
+  for (let t = lo; t <= hi; t += 1) out.push(t);
   return out;
 }
 
@@ -250,6 +184,8 @@ export default function App() {
   const [projA, setProjA] = useState(null);
   const [projB, setProjB] = useState(null);
 
+  const [scoringFormat, setScoringFormat] = useState("half_ppr");
+
   const [loadingProj, setLoadingProj] = useState(false);
   const [projErr, setProjErr] = useState("");
 
@@ -301,43 +237,31 @@ export default function App() {
   };
 
   // Rows + matching rules (regex include/exclude) against FLATTENED keys
-const STAT_ROWS = [
-  // headline rows
-  {
-    label: "ppr",
-    rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
-  },
-  {
-    label: "median",
-    rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },
-  },
-  {
-    label: "ceiling",
-    rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },
-  },
-  {
-    label: "pass tds",
-    rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
-  },
+  const STAT_ROWS = [
+    // headline rows
+    {
+      label: "ppr",
+      rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
+    },
+   // { label: "median", rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },},
+   // { label: "ceiling", rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },},
+    { label: "pass tds", rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },},
+    { label: "pass INTs",       rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
+    { label: "rush/rec TDs",    rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
+    { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
+    { label: "rush yards",      rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
+    { label: "receptions",      rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
+    { label: "pass yards",      rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
 
-  // added stat lines
-  { label: "pass INTs",       rules: { include: [/interception|^ints?$/], exclude: [/sample|chart/] } },
-  { label: "rush/rec TDs",    rules: { include: [/(rush|rushing|rec(eiv|ept))/, /td/], exclude: [/pass|sample|chart/] } },
-  { label: "reception yards", rules: { include: [/(receiv|recept|rec)\w*/, /(yard|yds?)/], exclude: [/rush|pass|sample|chart/] } },
-  { label: "rush yards",      rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
-  { label: "receptions",      rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
-  { label: "pass yards",      rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
+    // scoring buckets (distinct)
+    { label: "full-PPR points", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
+    { label: "half-PPR points", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
+    { label: "no-PPR points",   rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
 
-  // scoring buckets (distinct)
-  { label: "full-PPR points", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
-  { label: "half-PPR points", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
-  { label: "no-PPR points",   rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
-
-  { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } },
-  { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } },
-  { label: "no-PPR median",   rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } },
-];
-
+    { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } },
+    { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } },
+    { label: "no-PPR median",   rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } },
+  ];
 
   // Build table row values via regex resolver on the FLATTENED keys
   const tableRows = STAT_ROWS.map(({ label: rowLabel, rules }) => {
@@ -346,40 +270,77 @@ const STAT_ROWS = [
     return { rowLabel, aVal, bVal };
   });
 
-  // Half-PPR chart data
-  const aSeries = useMemo(() => halfPprSeriesFromProjection(projA), [projA]);
-  const bSeries = useMemo(() => halfPprSeriesFromProjection(projB), [projB]);
-  const chartData = useMemo(() => mergeSeries(aSeries, bSeries, "A", "B"), [aSeries, bSeries]);
+  // Non-cumulative chart data based on selected scoring format (bell curve)
+  const aSeries = useMemo(() => {
+    if (!projA) return null;
+    const chartKey = `chart_source_${scoringFormat}`;
+    const data = projA[chartKey];
+    if (!Array.isArray(data) || data.length === 0) return null;
+    
+    const series = data
+      .map((d) => ({ x: Number(d.x), y: Number(d.y) }))
+      .filter((d) => Number.isFinite(d.x) && Number.isFinite(d.y))
+      .sort((a, b) => a.x - b.x);
+    
+    return series.length ? series : null;
+  }, [projA, scoringFormat]);
+
+  const bSeries = useMemo(() => {
+    if (!projB) return null;
+    const chartKey = `chart_source_${scoringFormat}`;
+    const data = projB[chartKey];
+    if (!Array.isArray(data) || data.length === 0) return null;
+    
+    const series = data
+      .map((d) => ({ x: Number(d.x), y: Number(d.y) }))
+      .filter((d) => Number.isFinite(d.x) && Number.isFinite(d.y))
+      .sort((a, b) => a.x - b.x);
+    
+    return series.length ? series : null;
+  }, [projB, scoringFormat]);
+
+  const chartData = useMemo(() => {
+    if (!aSeries && !bSeries) return [];
+    const xs = new Set();
+    (aSeries || []).forEach((d) => xs.add(d.x));
+    (bSeries || []).forEach((d) => xs.add(d.x));
+    const xVals = Array.from(xs).sort((a, b) => a - b);
+
+    return xVals.map((x) => ({
+      x,
+      A: aSeries?.find(d => d.x === x)?.y ?? null,
+      B: bSeries?.find(d => d.x === x)?.y ?? null,
+    }));
+  }, [aSeries, bSeries]);
 
   const { xMin, xMax, xTicks } = useMemo(() => {
     if (!chartData.length) return { xMin: 0, xMax: 0, xTicks: [] };
     const xs = chartData.map((d) => d.x).filter(Number.isFinite);
     const min = Math.min(...xs);
     const max = Math.max(...xs);
-    return { xMin: Math.floor(min / 5) * 5, xMax: Math.ceil(max / 5) * 5, xTicks: ticks5(min, max) };
+    return { xMin: Math.floor(min), xMax: Math.ceil(max), xTicks: ticksEvery1(min, max) };
   }, [chartData]);
 
-  // Optional vertical medians if present on projection
-  const aMedian =
-    Number.isFinite(Number(projA?.total_score_half_ppr_median))
-      ? Number(projA.total_score_half_ppr_median)
-      : (Number.isFinite(Number(projA?.median)) ? Number(projA.median) : null);
-  const bMedian =
-    Number.isFinite(Number(projB?.total_score_half_ppr_median))
-      ? Number(projB.total_score_half_ppr_median)
-      : (Number.isFinite(Number(projB?.median)) ? Number(projB.median) : null);
+  // Dynamic median based on scoring format
+  const getMedianKey = (format) => {
+    if (format === "full_ppr") return "total_score_full_ppr_median";
+    if (format === "no_ppr") return "total_score_no_ppr_median";
+    return "total_score_half_ppr_median";
+  };
+
+  const aMedian = projA ? Number(projA[getMedianKey(scoringFormat)]) : null;
+  const bMedian = projB ? Number(projB[getMedianKey(scoringFormat)]) : null;
 
   const showEmpty = !(a && b);
   const strokeA = "#2563eb";
   const strokeB = "#ef4444";
 
-  // Debug toggle (?debug=1) shows FLATTENED keys so you can confirm names quickly
-  const debug = typeof window !== "undefined" && /[?&]debug=1\b/.test(window.location.search);
-
-  const flatA = useMemo(() => (projA ? flattenObject(projA) : null), [projA]);
-  const flatB = useMemo(() => (projB ? flattenObject(projB) : null), [projB]);
-
-  
+  // Get chart title based on format
+  const getChartTitle = () => {
+    if (scoringFormat === "full_ppr") return "Full-PPR Points";
+    if (scoringFormat === "no_ppr") return "No-PPR Points";
+    return "Half-PPR Points";
+  };
 
   return (
     <div className="page">
@@ -394,10 +355,14 @@ const STAT_ROWS = [
           <li><span className="step-dot">2</span> Review the <strong>stat table</strong>.</li>
           <li><span className="step-dot">3</span> Use the <strong>distribution chart</strong> to gauge upside and risk.</li>
         </ul>
-        <div className="badges"><span className="badge">Half-PPR</span></div>
-      </div>
+        <div className="badges">
+          <div className="badges"><span className="badge">Full-PPR</span></div>
+          <div className="badges"><span className="badge">Half-PPR</span></div>
+          <div className="badges"><span className="badge">No-PPR</span></div>
+          </div>
+        </div>
 
-      {status === "error" && <div className="banner error">Couldn’t load players: {error}</div>}
+      {status === "error" && <div className="banner error">Could not load players: {error}</div>}
 
       <div className="selectors">
         <select value={a} onChange={(e) => setA(e.target.value)} disabled={status !== "success"} aria-label="Select Player A">
@@ -438,35 +403,35 @@ const STAT_ROWS = [
                 </div>
               )}
               {projErr && <div className="banner error" style={{ marginTop: 8 }}>{projErr}</div>}
-              {debug && (
-                <details style={{ marginTop: 8 }}>
-                  <summary style={{ cursor: "pointer" }}>debug: flattened projection keys</summary>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <strong>A keys</strong>
-                      <pre style={{ whiteSpace: "pre-wrap" }}>
-                        {flatA ? Object.keys(flatA).sort().join("\n") : "—"}
-                      </pre>
-                    </div>
-                    <div>
-                      <strong>B keys</strong>
-                      <pre style={{ whiteSpace: "pre-wrap" }}>
-                        {flatB ? Object.keys(flatB).sort().join("\n") : "—"}
-                      </pre>
-                    </div>
-                  </div>
-                </details>
-              )}
             </div>
 
-            {/* RIGHT: chart — Half-PPR ECDF */}
+            {/* RIGHT: chart – Dynamic PPR Distribution */}
             <div className="card chart-card">
-              <div className="card-title">Half-PPR Distribution</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div className="card-title">Score Distribution</div>
+                <select 
+                  value={scoringFormat} 
+                  onChange={(e) => setScoringFormat(e.target.value)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(148,163,184,0.4)",
+                    background: "#1e293b",
+                    color: "#e5e7eb",
+                    fontSize: "14px",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="full_ppr">Full PPR</option>
+                  <option value="half_ppr">Half PPR</option>
+                  <option value="no_ppr">No PPR</option>
+                </select>
+              </div>
               {!aSeries && !bSeries ? (
-                <div className="muted">No half-PPR distribution available.</div>
+                <div className="muted">No distribution available.</div>
               ) : (
                 <div className="chart-wrap" style={{ width: "100%", height: 450 }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
@@ -479,39 +444,40 @@ const STAT_ROWS = [
                         tick={{ fill: "#e5e7eb" }}
                         axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
                         tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        label={{ value: "Half-PPR Points", position: "insideBottom", offset: -25, fill: "#e5e7eb" }}
+                        label={{ value: getChartTitle(), position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
                       />
-                      <YAxis
-                        domain={[0, 100]}
-                        tickFormatter={(v) => `${v}%`}
-                        tick={{ fill: "#e5e7eb" }}
-                        axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        tickMargin={8}
-                        label={{ value: "Cumulative %", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
-                      />
-                      <Tooltip
-                        formatter={(value, name) =>
-                          value == null ? "-" : [`${Number(value).toFixed(1)}%`, name === "A" ? label(a) : label(b)]
-                        }
-                        labelFormatter={(v) => `Pts: ${v}`}
-                      />
-                        <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 60 }} />
+                          <YAxis
+                            domain={[0, 2500]}
+                            ticks={[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500]}
+                            tick={{ fill: "#e5e7eb" }}
+                            axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                            tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                            tickMargin={8}
+                            label={{ value: "Simulation Count", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
+                          />
+                          <Tooltip
+                            formatter={(value, name) =>
+                              value == null ? "-" : [value.toFixed(0), name === "A" ? label(a) : label(b)]
+                            }
+                            labelFormatter={(v) => `Pts: ${v}`}
+                          />
+                      <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 20 }} />
 
-                        {Number.isFinite(aMedian) && (
-                          <ReferenceLine
-                            x={aMedian}
-                            stroke={strokeA}
-                            strokeDasharray="4 4"
-                          />
-                        )}
-                        {Number.isFinite(bMedian) && (
-                          <ReferenceLine
-                            x={bMedian}
-                            stroke={strokeB}
-                            strokeDasharray="4 4"
-                          />
-                        )}
+                      {Number.isFinite(aMedian) && (
+                        <ReferenceLine
+                          x={aMedian}
+                          stroke={strokeA}
+                          strokeDasharray="4 4"
+                        />
+                      )}
+                      {Number.isFinite(bMedian) && (
+                        <ReferenceLine
+                          x={bMedian}
+                          stroke={strokeB}
+                          strokeDasharray="4 4"
+                        />
+                      )}
+
                       <Line type="monotone" dataKey="A" name={label(a)} dot={false} strokeWidth={3} stroke={strokeA} activeDot={{ r: 4 }} />
                       <Line type="monotone" dataKey="B" name={label(b)} dot={false} strokeWidth={3} stroke={strokeB} activeDot={{ r: 4 }} />
                     </LineChart>
