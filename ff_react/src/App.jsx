@@ -114,10 +114,7 @@ async function fetchProjection(playerId) {
   }
   const data = await res.json();
 
-  // Unwrap common shapes:
-  // - { projection: {...} }  -or-  { data: {...} }
-  // - [ {...} ]
-  // - plain {...}
+  // Unwrap common shapes
   if (Array.isArray(data)) return data[0] ?? null;
   if (data && typeof data === "object") {
     if (data.projection && typeof data.projection === "object") return data.projection;
@@ -129,7 +126,6 @@ async function fetchProjection(playerId) {
 
 /* ---------------- flatten + stat resolver (regex-based) ---------------- */
 
-/** Deep-flatten an object into a 1-level map with dotted paths (arrays keep numeric indices) */
 function flattenObject(obj, prefix = "", out = {}) {
   if (obj == null) return out;
   if (typeof obj !== "object") {
@@ -148,7 +144,6 @@ function flattenObject(obj, prefix = "", out = {}) {
   return out;
 }
 
-/** Pick the best flattened key by include/exclude regex rules (prefer scalar values) */
 function resolveByRegexFlat(obj, { include = [], exclude = [] } = {}) {
   if (!obj || typeof obj !== "object") return undefined;
   const flat = flattenObject(obj);
@@ -161,7 +156,7 @@ function resolveByRegexFlat(obj, { include = [], exclude = [] } = {}) {
     if (exclude.some((re) => re.test(key))) continue;
 
     const val = flat[k];
-    const score = (isScalar(val) ? 2 : 0) + include.length; // prefer scalars
+    const score = (isScalar(val) ? 2 : 0) + include.length;
     if (!best || score > best.score) best = { k, val, score };
   }
   return best ? best.val : undefined;
@@ -236,49 +231,45 @@ export default function App() {
     return affix ? `${meta.name} (${affix})` : meta.name;
   };
 
-  // Rows + matching rules (regex include/exclude) against FLATTENED keys
-// Dynamic rows based on scoring format
-const STAT_ROWS = useMemo(() => {
-  const baseRows = [
-    {
-      label: "ppr",
-      rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
-    },
-    //{label: "median",rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },},
-    //{ label: "ceiling", rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },},
-    {
-      label: "pass tds",
-      rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
-    },
-    { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
-    { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
-    { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
-    { label: "rush yards", rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
-    { label: "receptions", rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
-    { label: "pass yards", rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
-  ];
+  // Dynamic rows based on scoring format
+  const STAT_ROWS = useMemo(() => {
+    const baseRows = [
+      {
+        label: "ppr",
+        rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
+      },
+      {
+        label: "pass tds",
+        rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
+      },
+      { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
+      { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
+      { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
+      { label: "rush yards", rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
+      { label: "receptions", rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
+      { label: "pass yards", rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
+    ];
 
-  // Add scoring-specific rows based on dropdown selection
-// Add scoring-specific rows based on dropdown selection
-if (scoringFormat === "full_ppr") {
-  baseRows.push(
-    { label: "full-PPR average", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
-    { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } }
-  );
-} else if (scoringFormat === "half_ppr") {
-  baseRows.push(
-    { label: "half-PPR average", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
-    { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } }
-  );
-} else if (scoringFormat === "no_ppr") {
-  baseRows.push(
-    { label: "no-PPR average", rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
-    { label: "no-PPR median", rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } }
-  );
-}
+    // Add scoring-specific rows based on dropdown selection
+    if (scoringFormat === "full_ppr") {
+      baseRows.push(
+        { label: "full-PPR average", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
+        { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } }
+      );
+    } else if (scoringFormat === "half_ppr") {
+      baseRows.push(
+        { label: "half-PPR average", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
+        { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } }
+      );
+    } else if (scoringFormat === "no_ppr") {
+      baseRows.push(
+        { label: "no-PPR average", rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
+        { label: "no-PPR median", rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } }
+      );
+    }
 
-  return baseRows;
-}, [scoringFormat]);
+    return baseRows;
+  }, [scoringFormat]);
 
   // Build table row values via regex resolver on the FLATTENED keys
   const tableRows = STAT_ROWS.map(({ label: rowLabel, rules }) => {
@@ -287,7 +278,7 @@ if (scoringFormat === "full_ppr") {
     return { rowLabel, aVal, bVal };
   });
 
-  // Non-cumulative chart data based on selected scoring format (bell curve)
+  // Chart data based on selected scoring format
   const aSeries = useMemo(() => {
     if (!projA) return null;
     const chartKey = `chart_source_${scoringFormat}`;
@@ -373,15 +364,15 @@ if (scoringFormat === "full_ppr") {
           <li><span className="step-dot">3</span> Use the <strong>distribution chart</strong> to gauge upside and risk.</li>
         </ul>
         <div className="badges">
-          <div className="badges"><span className="badge">Full-PPR</span></div>
-          <div className="badges"><span className="badge">Half-PPR</span></div>
-          <div className="badges"><span className="badge">No-PPR</span></div>
-          </div>
+          <span className="badge">Full-PPR</span>
+          <span className="badge">Half-PPR</span>
+          <span className="badge">No-PPR</span>
         </div>
+      </div>
 
       {status === "error" && <div className="banner error">Could not load players: {error}</div>}
 
-<div className="selectors">
+      <div className="selectors">
         <select value={a} onChange={(e) => setA(e.target.value)} disabled={status !== "success"} aria-label="Select Player A">
           <option value="">{status === "loading" ? "Loading players…" : "Select Player A"}</option>
           {players.map((p) => (
