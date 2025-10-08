@@ -237,31 +237,48 @@ export default function App() {
   };
 
   // Rows + matching rules (regex include/exclude) against FLATTENED keys
-  const STAT_ROWS = [
-    // headline rows
+// Dynamic rows based on scoring format
+const STAT_ROWS = useMemo(() => {
+  const baseRows = [
     {
       label: "ppr",
       rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
     },
-   // { label: "median", rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },},
-   // { label: "ceiling", rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },},
-    { label: "pass tds", rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },},
-    { label: "pass INTs",       rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
-    { label: "rush/rec TDs",    rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
+    //{label: "median",rules: { include: [/median|^p50$|percentile_?50/], exclude: [/sample|chart/] },},
+    //{ label: "ceiling", rules: { include: [/ceiling|^p95$|percentile_?95/], exclude: [/sample|chart/] },},
+    {
+      label: "pass tds",
+      rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
+    },
+    { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
+    { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
     { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
-    { label: "rush yards",      rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
-    { label: "receptions",      rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
-    { label: "pass yards",      rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
-
-    // scoring buckets (distinct)
-    { label: "full-PPR points", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
-    { label: "half-PPR points", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
-    { label: "no-PPR points",   rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
-
-    { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } },
-    { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } },
-    { label: "no-PPR median",   rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } },
+    { label: "rush yards", rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
+    { label: "receptions", rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
+    { label: "pass yards", rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
   ];
+
+  // Add scoring-specific rows based on dropdown selection
+// Add scoring-specific rows based on dropdown selection
+if (scoringFormat === "full_ppr") {
+  baseRows.push(
+    { label: "full-PPR average", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
+    { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } }
+  );
+} else if (scoringFormat === "half_ppr") {
+  baseRows.push(
+    { label: "half-PPR average", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
+    { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } }
+  );
+} else if (scoringFormat === "no_ppr") {
+  baseRows.push(
+    { label: "no-PPR average", rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
+    { label: "no-PPR median", rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } }
+  );
+}
+
+  return baseRows;
+}, [scoringFormat]);
 
   // Build table row values via regex resolver on the FLATTENED keys
   const tableRows = STAT_ROWS.map(({ label: rowLabel, rules }) => {
@@ -364,7 +381,7 @@ export default function App() {
 
       {status === "error" && <div className="banner error">Could not load players: {error}</div>}
 
-      <div className="selectors">
+<div className="selectors">
         <select value={a} onChange={(e) => setA(e.target.value)} disabled={status !== "success"} aria-label="Select Player A">
           <option value="">{status === "loading" ? "Loading players…" : "Select Player A"}</option>
           {players.map((p) => (
@@ -382,6 +399,47 @@ export default function App() {
           ))}
         </select>
       </div>
+
+      {/* Scoring Format Selector */}
+      {(a || b) && (
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          alignItems: "center", 
+          gap: "12px",
+          margin: "24px 0",
+          padding: "16px",
+          background: "rgba(30, 41, 59, 0.5)",
+          borderRadius: "12px",
+          border: "1px solid rgba(148,163,184,0.2)"
+        }}>
+          <label style={{ 
+            color: "#e5e7eb", 
+            fontWeight: "500",
+            fontSize: "16px"
+          }}>
+            Scoring Format:
+          </label>
+          <select 
+            value={scoringFormat} 
+            onChange={(e) => setScoringFormat(e.target.value)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid rgba(148,163,184,0.4)",
+              background: "#1e293b",
+              color: "#e5e7eb",
+              fontSize: "16px",
+              cursor: "pointer",
+              fontWeight: "500"
+            }}
+          >
+            <option value="full_ppr">Full PPR</option>
+            <option value="half_ppr">Half PPR</option>
+            <option value="no_ppr">No PPR</option>
+          </select>
+        </div>
+      )}
 
       <div className="content">
         {showEmpty ? (
@@ -405,28 +463,9 @@ export default function App() {
               {projErr && <div className="banner error" style={{ marginTop: 8 }}>{projErr}</div>}
             </div>
 
-            {/* RIGHT: chart – Dynamic PPR Distribution */}
+            {/* RIGHT: chart */}
             <div className="card chart-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div className="card-title">Score Distribution</div>
-                <select 
-                  value={scoringFormat} 
-                  onChange={(e) => setScoringFormat(e.target.value)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    border: "1px solid rgba(148,163,184,0.4)",
-                    background: "#1e293b",
-                    color: "#e5e7eb",
-                    fontSize: "14px",
-                    cursor: "pointer"
-                  }}
-                >
-                  <option value="full_ppr">Full PPR</option>
-                  <option value="half_ppr">Half PPR</option>
-                  <option value="no_ppr">No PPR</option>
-                </select>
-              </div>
+              <div className="card-title">Score Distribution</div>
               {!aSeries && !bSeries ? (
                 <div className="muted">No distribution available.</div>
               ) : (
@@ -446,21 +485,21 @@ export default function App() {
                         tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
                         label={{ value: getChartTitle(), position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
                       />
-                          <YAxis
-                            domain={[0, 2500]}
-                            ticks={[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500]}
-                            tick={{ fill: "#e5e7eb" }}
-                            axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                            tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                            tickMargin={8}
-                            label={{ value: "Simulation Count", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
-                          />
-                          <Tooltip
-                            formatter={(value, name) =>
-                              value == null ? "-" : [value.toFixed(0), name === "A" ? label(a) : label(b)]
-                            }
-                            labelFormatter={(v) => `Pts: ${v}`}
-                          />
+                      <YAxis
+                        domain={[0, 2500]}
+                        ticks={[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500]}
+                        tick={{ fill: "#e5e7eb" }}
+                        axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                        tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+                        tickMargin={8}
+                        label={{ value: "Simulation Count", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
+                      />
+                      <Tooltip
+                        formatter={(value, name) =>
+                          value == null ? "-" : [value.toFixed(0), name === "A" ? label(a) : label(b)]
+                        }
+                        labelFormatter={(v) => `Pts: ${v}`}
+                      />
                       <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 20 }} />
 
                       {Number.isFinite(aMedian) && (
