@@ -178,51 +178,127 @@
   overflow: hidden;
 }
 
-/* Mobile */
-@media (max-width: 900px){
-  .hero { 
-    padding: 12px; 
+/* Tablet (768px and below) */
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 16px;
   }
-  .two-col { 
-    grid-template-columns: 1fr; 
+
+  .title {
+    font-size: 2rem;
   }
-  .chart-wrap { 
-    height: 400px; /* Increased from 320px */
+
+  .hero {
+    padding: 24px;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .steps {
+    font-size: 0.9rem;
+  }
+
+  /* Stack player selectors vertically */
+  .selectors {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .selectors select {
+    width: 100%;
+  }
+
+  /* Stack table and chart vertically */
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  /* Make chart taller on tablet */
+  .chart-card .chart-wrap {
+    height: 400px !important;
+  }
+
+  /* Smaller badges */
+  .badges {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+  }
+
+  /* Scoring selector adjustments */
+  .scoring-selector {
+    padding: 12px;
   }
 }
 
-.chart-card .recharts-text tspan { 
-  fill: #e5e7eb !important;
-}
-
-.chart-card .recharts-cartesian-grid line { 
-  stroke: rgba(255,255,255,0.08); 
-}
-
-.chart-card .recharts-cartesian-axis line,
-.chart-card .recharts-cartesian-axis-tick line { 
-  stroke: rgba(148,163,184,0.4); 
-}
-
-.chart-card .recharts-legend-item-text { 
-  color: #e5e7eb !important; 
-}
-
-.chart-card .recharts-default-tooltip {
-  background: rgba(15,23,42,0.95) !important;
-  border: 1px solid rgba(148,163,184,0.35) !important;
-  color: #e5e7eb !important;
-}
-
-/* ---- Mobile responsive ---- */
-@media (max-width: 900px){
-  .hero { 
-    padding: 12px; 
+/* Mobile (480px and below) */
+@media (max-width: 480px) {
+  .page {
+    padding: 16px 12px;
   }
-  .two-col { 
-    grid-template-columns: 1fr; 
+
+  .title {
+    font-size: 1.5rem;
   }
-  .chart-wrap { 
-    height: 320px; 
+
+  .hero {
+    padding: 16px;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .steps {
+    font-size: 0.85rem;
+    padding-left: 24px;
+  }
+
+  .step-dot {
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+  }
+
+  /* Make cards more compact */
+  .card {
+    padding: 16px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  /* Smaller table text */
+  .compare-grid {
+    font-size: 0.85rem;
+    gap: 8px 12px;
+  }
+
+  .row-label {
+    font-size: 0.8rem;
+  }
+
+  /* Adjust scoring format selector */
+  .scoring-selector {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .scoring-selector label {
+    font-size: 14px;
+  }
+
+  .scoring-selector select {
+    width: 100%;
+    font-size: 14px;
   }
 }

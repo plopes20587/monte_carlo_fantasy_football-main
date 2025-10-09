@@ -34,17 +34,6 @@ const fmt = (v) => {
     : n.toLocaleString(undefined, { maximumFractionDigits: 3 });
 };
 
-/* ---------------- ticks helper ---------------- */
-
-function ticksEvery1(min, max) {
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return [];
-  const lo = Math.floor(min);
-  const hi = Math.ceil(max);
-  const out = [];
-  for (let t = lo; t <= hi; t += 1) out.push(t);
-  return out;
-}
-
 /* ---------------- tiny table row component ---------------- */
 
 function FragmentRow({ title, a, b }) {
@@ -231,45 +220,45 @@ export default function App() {
     return affix ? `${meta.name} (${affix})` : meta.name;
   };
 
-  // Dynamic rows based on scoring format
-  const STAT_ROWS = useMemo(() => {
-    const baseRows = [
-      {
-        label: "ppr",
-        rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
-      },
-      {
-        label: "pass tds",
-        rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
-      },
-      { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
-      { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
-      { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
-      { label: "rush yards", rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
-      { label: "receptions", rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
-      { label: "pass yards", rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
-    ];
+// Dynamic rows based on scoring format
+const STAT_ROWS = useMemo(() => {
+  const baseRows = [
+    {
+      label: "ppr",
+      rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
+    },
+    {
+      label: "pass tds",
+      rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
+    },
+    { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
+    { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
+    { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
+    { label: "rush yards", rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
+    { label: "receptions", rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
+    { label: "pass yards", rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
+  ];
 
-    // Add scoring-specific rows based on dropdown selection
-    if (scoringFormat === "full_ppr") {
-      baseRows.push(
-        { label: "full-PPR average", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
-        { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } }
-      );
-    } else if (scoringFormat === "half_ppr") {
-      baseRows.push(
-        { label: "half-PPR average", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
-        { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } }
-      );
-    } else if (scoringFormat === "no_ppr") {
-      baseRows.push(
-        { label: "no-PPR average", rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
-        { label: "no-PPR median", rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } }
-      );
-    }
+  // Add scoring-specific rows (both mean and median)
+  if (scoringFormat === "full_ppr") {
+    baseRows.push(
+      { label: "full-PPR mean", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
+      { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } }
+    );
+  } else if (scoringFormat === "half_ppr") {
+    baseRows.push(
+      { label: "half-PPR mean", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
+      { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } }
+    );
+  } else if (scoringFormat === "no_ppr") {
+    baseRows.push(
+      { label: "no-PPR mean", rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
+      { label: "no-PPR median", rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } }
+    );
+  }
 
-    return baseRows;
-  }, [scoringFormat]);
+  return baseRows;
+}, [scoringFormat]);
 
   // Build table row values via regex resolver on the FLATTENED keys
   const tableRows = STAT_ROWS.map(({ label: rowLabel, rules }) => {
@@ -307,27 +296,23 @@ export default function App() {
     return series.length ? series : null;
   }, [projB, scoringFormat]);
 
-  const chartData = useMemo(() => {
-    if (!aSeries && !bSeries) return [];
-    const xs = new Set();
-    (aSeries || []).forEach((d) => xs.add(d.x));
-    (bSeries || []).forEach((d) => xs.add(d.x));
-    const xVals = Array.from(xs).sort((a, b) => a - b);
+    const chartData = useMemo(() => {
+      if (!aSeries && !bSeries) return [];
+      const xs = new Set();
+      (aSeries || []).forEach((d) => {
+        if (d.x >= 0 && d.x <= 26) xs.add(d.x);
+      });
+      (bSeries || []).forEach((d) => {
+        if (d.x >= 0 && d.x <= 26) xs.add(d.x);
+      });
+      const xVals = Array.from(xs).sort((a, b) => a - b);
 
-    return xVals.map((x) => ({
-      x,
-      A: aSeries?.find(d => d.x === x)?.y ?? null,
-      B: bSeries?.find(d => d.x === x)?.y ?? null,
-    }));
-  }, [aSeries, bSeries]);
-
-  const { xMin, xMax, xTicks } = useMemo(() => {
-    if (!chartData.length) return { xMin: 0, xMax: 0, xTicks: [] };
-    const xs = chartData.map((d) => d.x).filter(Number.isFinite);
-    const min = Math.min(...xs);
-    const max = Math.max(...xs);
-    return { xMin: Math.floor(min), xMax: Math.ceil(max), xTicks: ticksEvery1(min, max) };
-  }, [chartData]);
+      return xVals.map((x) => ({
+        x,
+        A: aSeries?.find(d => d.x === x)?.y ?? null,
+        B: bSeries?.find(d => d.x === x)?.y ?? null,
+      }));
+    }, [aSeries, bSeries]);
 
   // Dynamic median based on scoring format
   const getMedianKey = (format) => {
@@ -374,7 +359,7 @@ export default function App() {
 
       <div className="selectors">
         <select value={a} onChange={(e) => setA(e.target.value)} disabled={status !== "success"} aria-label="Select Player A">
-          <option value="">{status === "loading" ? "Loading players…" : "Select Player A"}</option>
+          <option value="">{status === "loading" ? "Loading players..." : "Select Player A"}</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}{p.team ? ` (${p.team}` : ""}{p.position ? ` ${p.position}` : ""}{p.team ? ")" : ""}
@@ -382,7 +367,7 @@ export default function App() {
           ))}
         </select>
         <select value={b} onChange={(e) => setB(e.target.value)} disabled={status !== "success"} aria-label="Select Player B">
-          <option value="">{status === "loading" ? "Loading players…" : "Select Player B"}</option>
+          <option value="">{status === "loading" ? "Loading players..." : "Select Player B"}</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}{p.team ? ` (${p.team}` : ""}{p.position ? ` ${p.position}` : ""}{p.team ? ")" : ""}
@@ -393,7 +378,7 @@ export default function App() {
 
       {/* Scoring Format Selector */}
       {(a || b) && (
-        <div style={{ 
+        <div className="scoring-selector" style={{ 
           display: "flex", 
           justifyContent: "center", 
           alignItems: "center", 
@@ -440,7 +425,7 @@ export default function App() {
             {/* LEFT: table */}
             <div className="card">
               {loadingProj ? (
-                <div className="muted">Loading projections…</div>
+                <div className="muted">Loading projections...</div>
               ) : (
                 <div className="compare-grid">
                   <div></div>
@@ -455,66 +440,90 @@ export default function App() {
             </div>
 
             {/* RIGHT: chart */}
-            <div className="card chart-card">
-              <div className="card-title">Score Distribution</div>
-              {!aSeries && !bSeries ? (
-                <div className="muted">No distribution available.</div>
-              ) : (
-                <div className="chart-wrap" style={{ width: "100%", height: 450 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        type="number"
-                        dataKey="x"
-                        domain={[xMin, xMax]}
-                        ticks={xTicks}
-                        allowDecimals={false}
-                        tickMargin={10}
-                        tick={{ fill: "#e5e7eb" }}
-                        axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        label={{ value: getChartTitle(), position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
-                      />
-                      <YAxis
-                        domain={[0, 2500]}
-                        ticks={[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500]}
-                        tick={{ fill: "#e5e7eb" }}
-                        axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        tickMargin={8}
-                        label={{ value: "Simulation Count", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
-                      />
-                      <Tooltip
-                        formatter={(value, name) =>
-                          value == null ? "-" : [value.toFixed(0), name === "A" ? label(a) : label(b)]
-                        }
-                        labelFormatter={(v) => `Pts: ${v}`}
-                      />
-                      <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 20 }} />
+{/* RIGHT: chart */}
+<div className="card chart-card">
+  <div className="card-title">Score Distribution</div>
+  {!aSeries && !bSeries ? (
+    <div className="muted">No distribution available.</div>
+  ) : (
+    <div className="chart-wrap" style={{ width: "100%", height: 450 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart 
+          data={chartData} 
+          margin={{ top: 20, right: 20, left: 20, bottom: 50 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            type="number"
+            dataKey="x"
+            domain={[0, 26]}
+            ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]}
+            allowDecimals={false}
+            allowDataOverflow={false}
+            tickMargin={10}
+            tick={{ fill: "#e5e7eb", fontSize: 12 }}
+            axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+            tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+            label={{ value: getChartTitle(), position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
+          />
+          <YAxis
+            domain={[0, 30]}
+            ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]}
+            tickFormatter={(v) => `${v}%`}
+            tick={{ fill: "#e5e7eb" }}
+            axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
+            tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
+            tickMargin={8}
+            label={{ value: "Probability %", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
+          />
+          <Tooltip
+            formatter={(value, name) =>
+              value == null ? "-" : [`${value.toFixed(1)}%`, name === "A" ? label(a) : label(b)]
+            }
+            labelFormatter={(v) => `Pts: ${v}`}
+          />
+          <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 20 }} />
 
-                      {Number.isFinite(aMedian) && (
-                        <ReferenceLine
-                          x={aMedian}
-                          stroke={strokeA}
-                          strokeDasharray="4 4"
-                        />
-                      )}
-                      {Number.isFinite(bMedian) && (
-                        <ReferenceLine
-                          x={bMedian}
-                          stroke={strokeB}
-                          strokeDasharray="4 4"
-                        />
-                      )}
+          {Number.isFinite(aMedian) && aMedian <= 26 && (
+            <ReferenceLine
+              x={aMedian}
+              stroke={strokeA}
+              strokeDasharray="4 4"
+            />
+          )}
+          {Number.isFinite(bMedian) && bMedian <= 26 && (
+            <ReferenceLine
+              x={bMedian}
+              stroke={strokeB}
+              strokeDasharray="4 4"
+            />
+          )}
 
-                      <Line type="monotone" dataKey="A" name={label(a)} dot={false} strokeWidth={3} stroke={strokeA} activeDot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="B" name={label(b)} dot={false} strokeWidth={3} stroke={strokeB} activeDot={{ r: 4 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
+          <Line 
+            type="monotone" 
+            dataKey="A" 
+            name={label(a)} 
+            dot={false} 
+            strokeWidth={3} 
+            stroke={strokeA} 
+            activeDot={{ r: 4 }}
+            connectNulls={true}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="B" 
+            name={label(b)} 
+            dot={false} 
+            strokeWidth={3} 
+            stroke={strokeB} 
+            activeDot={{ r: 4 }}
+            connectNulls={true}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )}
+</div>
           </div>
         )}
       </div>
