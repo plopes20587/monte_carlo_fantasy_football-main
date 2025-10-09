@@ -446,12 +446,24 @@ const STAT_ROWS = useMemo(() => {
   {!aSeries && !bSeries ? (
     <div className="muted">No distribution available.</div>
   ) : (
-    <div className="chart-wrap" style={{ width: "100%", height: 450 }}>
+    <div className="chart-wrap" style={{ width: "100%", height: 500 }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart 
           data={chartData} 
-          margin={{ top: 20, right: 20, left: 20, bottom: 50 }}
+          margin={{ top: 30, right: 20, left: 20, bottom: 50 }}
         >
+          <CartesianGrid strokeDasharray="3 3" />
+          
+          {/* Custom Y-axis label positioned above chart */}
+          <text 
+            x={0} 
+            y={10} 
+            fill="#e5e7eb" 
+            fontSize={14}
+            fontWeight={500}
+          >
+            Probability %
+          </text>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             type="number"
@@ -474,7 +486,6 @@ const STAT_ROWS = useMemo(() => {
             axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
             tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
             tickMargin={8}
-            label={{ value: "Probability %", angle: -90, position: "insideLeft", offset: 0, fill: "#e5e7eb" }}
           />
           <Tooltip
             formatter={(value, name) =>
@@ -482,7 +493,7 @@ const STAT_ROWS = useMemo(() => {
             }
             labelFormatter={(v) => `Pts: ${v}`}
           />
-          <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 20 }} />
+          <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 30 }} />
 
           {Number.isFinite(aMedian) && aMedian <= 26 && (
             <ReferenceLine

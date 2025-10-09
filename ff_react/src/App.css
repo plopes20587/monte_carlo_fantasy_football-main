@@ -172,6 +172,10 @@
   min-height: 450px; /* Increased from 340px */
 }
 
+.card-title {
+  padding-bottom: 1rem;
+  font-size: 1.25rem;
+}
 .chart-wrap{ 
   width: 100%; 
   height: 450px; /* Increased from 340px */
