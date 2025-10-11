@@ -1,23 +1,34 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
+import json
 
 app = FastAPI()
 
-# Hardcoded credentials
-supabase_url = "https://bipllavdnhnenirrhjfc.supabase.co"
-supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q"
-
-supabase: Client = create_client(supabase_url, supabase_key)
-
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Update this with your frontend URL after deployment
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ... rest of your code stays the same
+# Hardcoded credentials
+supabase_url = "https://bipllavdnhnenirrhjfc.supabase.co"
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q"
+supabase: Client = create_client(supabase_url, supabase_key)
+
+@app.get("/")
+async def root():
+    return {
+        "message": "NFL Player Compare API is running!",
+        "status": "healthy",
+        "endpoints": {
+            "players": "/players",
+            "projections": "/projections?player_id={id}"
+        }
+    }
 
 @app.get("/players")
 def get_players():
