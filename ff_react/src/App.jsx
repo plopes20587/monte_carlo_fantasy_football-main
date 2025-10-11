@@ -223,14 +223,8 @@ export default function App() {
 // Dynamic rows based on scoring format
 const STAT_ROWS = useMemo(() => {
   const baseRows = [
-    {
-      label: "ppr",
-      rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },
-    },
-    {
-      label: "pass tds",
-      rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
-    },
+    //{label: "ppr", rules: { include: [/^ppr$/], exclude: [/full|half|no|std|standard|median|p50|percentile|sample|chart/] },},
+    {label: "pass tds", rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },},
     { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
     { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
     { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
