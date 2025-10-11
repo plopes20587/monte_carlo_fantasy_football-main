@@ -338,9 +338,9 @@ const STAT_ROWS = useMemo(() => {
           Compare two NFL players using median, ceiling, and outcome distributions.
         </p>
         <ul className="steps">
-          <li><span className="step-dot">1</span> Pick <strong>Player A</strong> and <strong>Player B</strong>.</li>
-          <li><span className="step-dot">2</span> Review the <strong>stat table</strong>.</li>
-          <li><span className="step-dot">3</span> Use the <strong>distribution chart</strong> to gauge upside and risk.</li>
+          <li><span className="step-dot">1</span> Pick player A and player B</li>
+          <li><span className="step-dot">2</span> Review the stat table</li>
+          <li><span className="step-dot">3</span> Use the distribution chart to gauge upside and risk.</li>
         </ul>
         <div className="badges">
           <span className="badge">Full-PPR</span>
@@ -371,45 +371,20 @@ const STAT_ROWS = useMemo(() => {
       </div>
 
       {/* Scoring Format Selector */}
-      {(a || b) && (
-        <div className="scoring-selector" style={{ 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center", 
-          gap: "12px",
-          margin: "24px 0",
-          padding: "16px",
-          background: "rgba(30, 41, 59, 0.5)",
-          borderRadius: "12px",
-          border: "1px solid rgba(148,163,184,0.2)"
-        }}>
-          <label style={{ 
-            color: "#e5e7eb", 
-            fontWeight: "500",
-            fontSize: "16px"
-          }}>
-            Scoring Format:
-          </label>
-          <select 
-            value={scoringFormat} 
-            onChange={(e) => setScoringFormat(e.target.value)}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "1px solid rgba(148,163,184,0.4)",
-              background: "#1e293b",
-              color: "#e5e7eb",
-              fontSize: "16px",
-              cursor: "pointer",
-              fontWeight: "500"
-            }}
-          >
-            <option value="full_ppr">Full PPR</option>
-            <option value="half_ppr">Half PPR</option>
-            <option value="no_ppr">No PPR</option>
-          </select>
-        </div>
-      )}
+{/* Scoring Format Selector */}
+{(a || b) && (
+  <div className="scoring-selector">
+    <label>Scoring Format:</label>
+    <select 
+      value={scoringFormat} 
+      onChange={(e) => setScoringFormat(e.target.value)}
+    >
+      <option value="full_ppr">Full PPR</option>
+      <option value="half_ppr">Half PPR</option>
+      <option value="no_ppr">No PPR</option>
+    </select>
+  </div>
+)}
 
       <div className="content">
         {showEmpty ? (
@@ -450,7 +425,7 @@ const STAT_ROWS = useMemo(() => {
           
           {/* Custom Y-axis label positioned above chart */}
           <text 
-            x={0} 
+            x={20} 
             y={10} 
             fill="#e5e7eb" 
             fontSize={14}
@@ -476,10 +451,11 @@ const STAT_ROWS = useMemo(() => {
             domain={[0, 30]}
             ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]}
             tickFormatter={(v) => `${v}%`}
-            tick={{ fill: "#e5e7eb" }}
+            tick={{ fill: "#e5e7eb", fontSize: 12 }}
             axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
             tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-            tickMargin={8}
+            tickMargin={4}
+            width={40}
           />
           <Tooltip
             formatter={(value, name) =>

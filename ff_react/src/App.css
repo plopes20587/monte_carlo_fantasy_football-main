@@ -1,7 +1,7 @@
 #root {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
@@ -30,33 +30,40 @@
 }
 
 /* ---- Hero section ---- */
-.hero{
-  margin-top: 8px;
-  padding: 14px 16px;
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(2,6,23,0.04), rgba(2,6,23,0.02));
+.hero {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
-.subtitle{
-  margin: 0 0 8px 0;
-  color: var(--text-muted);
-  font-size: 14px;
+.subtitle {
+  font-size: 1.125rem;
+  color: #f1f5f9; /* Brighter text */
+  margin-bottom: 24px;
+  font-weight: 400;
 }
 
-.steps{
+.steps {
   list-style: none;
-  margin: 0;
   padding: 0;
-  display: grid;
-  gap: 6px;
-  font-size: 14px;
+  margin: 0 0 24px 0;
+  color: #e2e8f0; /* Brighter text */
+  font-size: 1rem;
+  text-align: left; /* Align left */
 }
 
-.steps li{ 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
+.steps li {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left; /* Align left */
+}
+
+.steps strong {
+  color: #ffffff; /* Make bold text even brighter */
 }
 
 .step-dot{
@@ -81,43 +88,103 @@
   margin-top: 10px;
 }
 
-.badge{
-  font-size: 12px;
-  color: #0f172a;
-  background: #e5e7eb;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(15,23,42,0.08);
+.badge {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-weight: 500;
+  /* Remove any hover effects that make it seem clickable */
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ---- Selectors ---- */
-.selectors{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.scoring-selector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 12px;
-  margin-top: 12px;
+  margin: 24px 0;
+  padding: 20px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.selectors select{
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--card-border);
+.scoring-selector label {
+  color: #f1f5f9;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.scoring-selector select {
+  padding: 10px 16px;
   border-radius: 8px;
-  background: none;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.scoring-selector select:hover {
+  border-color: rgba(59, 130, 246, 0.8);
+  background: #334155;
+}
+
+.scoring-selector select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* ---- Player Selectors ---- */
+.selectors {
+  display: flex;
+  gap: 16px;
+  margin: 24px 0;
+  justify-content: center;
+}
+
+.selectors select {
+  flex: 1;
+  max-width: 400px;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 2px solid rgba(148, 163, 184, 0.4);
+  background: #1e293b;
+  color: #f1f5f9;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #6b7280 50%),
-    linear-gradient(135deg, #6b7280 50%, transparent 50%),
-    linear-gradient(to right, transparent, transparent);
-  background-position:
-    calc(100% - 18px) calc(50% - 3px),
-    calc(100% - 13px) calc(50% - 3px),
-    calc(100% - 2.2em) 50%;
-  background-size:
-    6px 6px,
-    6px 6px,
-    1px 1.6em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f1f5f9' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.selectors select:hover {
+  border-color: rgba(148, 163, 184, 0.6);
+  background-color: #334155;
+}
+
+.selectors select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.selectors select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ---- Content area ---- */
@@ -169,18 +236,24 @@
 .chart-card { 
   background: #0f172a;
   color: #e5e7eb;
-  min-height: 450px; /* Increased from 340px */
+  /*min-height: 450px;*/
+  overflow: visible;
+  padding: 12px 8px; /* Reduce padding on chart card */
 }
 
 .card-title {
-  padding-bottom: 1rem;
+  padding-bottom: 0.5rem;
   font-size: 1.25rem;
+  padding-left: 8px; /* Add slight left padding to title */
 }
-.chart-wrap{ 
-  width: 100%; 
-  height: 450px; /* Increased from 340px */
-  overflow: hidden;
+
+.chart-wrap {
+  width: 100%;
+  height: 450px;
+  margin-left: -15px;
+  margin-right: -15px;
 }
+
 
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
@@ -194,14 +267,22 @@
 
   .hero {
     padding: 24px;
+    text-align: left;
   }
 
   .subtitle {
     font-size: 1rem;
+    color: #f1f5f9;
   }
 
   .steps {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    color: #e2e8f0;
+    padding-left: 0;
+  }
+
+  .steps strong {
+    color: #ffffff;
   }
 
   /* Stack player selectors vertically */
@@ -212,6 +293,9 @@
 
   .selectors select {
     width: 100%;
+    max-width: none;
+    font-size: 16px;
+    padding: 14px 16px;
   }
 
   /* Stack table and chart vertically */
@@ -220,15 +304,21 @@
     gap: 24px;
   }
 
-  /* Make chart taller on tablet */
+  .chart-card {
+    padding: 12px 4px 8px 4px; /* Reduce padding further */
+  }
+
   .chart-card .chart-wrap {
     height: 400px !important;
+    margin-left: -8px;
+    margin-right: -8px;
   }
 
   /* Smaller badges */
   .badges {
     flex-wrap: wrap;
     gap: 8px;
+    justify-content: flex-start;
   }
 
   .badge {
@@ -238,7 +328,18 @@
 
   /* Scoring selector adjustments */
   .scoring-selector {
-    padding: 12px;
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scoring-selector label {
+    font-size: 15px;
+  }
+
+  .scoring-selector select {
+    width: 100%;
+    font-size: 15px;
   }
 }
 
@@ -254,15 +355,18 @@
 
   .hero {
     padding: 16px;
+    text-align: left;
   }
 
   .subtitle {
     font-size: 0.9rem;
+    color: #f1f5f9;
   }
 
   .steps {
     font-size: 0.85rem;
-    padding-left: 24px;
+    padding-left: 0;
+    color: #e2e8f0;
   }
 
   .step-dot {
@@ -290,11 +394,36 @@
     font-size: 0.8rem;
   }
 
+  /* Keep selectors visible on mobile */
+  .selectors select {
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+
+  /* Maximize chart space on mobile */
+  .chart-card {
+    padding: 10px 2px 4px 2px; /* Minimal padding */
+  }
+
+  .card-title {
+    font-size: 1rem;
+    padding-left: 10px;
+    margin-bottom: 4px;
+  }
+
+  .chart-card .chart-wrap {
+    height: 320px !important; /* Slightly shorter for mobile */
+    margin-left: -4px;
+    margin-right: -4px;
+    margin-bottom: 0;
+  }
+
   /* Adjust scoring format selector */
   .scoring-selector {
     flex-direction: column;
     gap: 8px;
     padding: 12px;
+    align-items: flex-start;
   }
 
   .scoring-selector label {
