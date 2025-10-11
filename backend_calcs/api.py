@@ -8,7 +8,11 @@ app = FastAPI()
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://monte-carlo-fantasy-football-main-front.onrender.com/"],  # Update this with your frontend URL after deployment
+    allow_origins=[
+        "http://localhost:5173",
+        "https://monte-carlo-fantasy-football-main-front.onrender.com",  # Add your actual frontend URL
+        "*"  # Temporarily allow all for testing
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
