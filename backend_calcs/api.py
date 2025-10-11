@@ -18,10 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Hardcoded credentials
-supabase_url = "https://bipllavdnhnenirrhjfc.supabase.co"
-supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q"
+supabase_url = os.getenv("SUPABASE_URL", "https://bipllavdnhnenirrhjfc.supabase.co")
+supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q")
 supabase: Client = create_client(supabase_url, supabase_key)
+
+# Hardcoded credentials
+#supabase_url = "https://bipllavdnhnenirrhjfc.supabase.co"
+#supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q"
+#supabase: Client = create_client(supabase_url, supabase_key)
 
 @app.get("/")
 async def root():
