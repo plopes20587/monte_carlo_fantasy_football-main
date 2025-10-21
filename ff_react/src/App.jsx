@@ -426,7 +426,9 @@ const STAT_ROWS = useMemo(() => {
           data={chartData} 
           margin={{ top: 30, right: 20, left: 20, bottom: 50 }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" 
+          stroke="rgba(255, 255, 255, 0.1)"
+          />
           
           {/* Custom Y-axis label positioned above chart */}
           <text 
@@ -438,7 +440,6 @@ const STAT_ROWS = useMemo(() => {
           >
             Probability %
           </text>
-          <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             type="number"
             dataKey="x"
@@ -447,16 +448,16 @@ const STAT_ROWS = useMemo(() => {
             allowDecimals={false}
             allowDataOverflow={false}
             tickMargin={10}
-            tick={{ fill: "#e5e7eb", fontSize: 12 }}
+            tick={{ fill: "#e5e7eb", fontSize: 14 }}
             axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
             tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
             label={{ value: getChartTitle(), position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
           />
           <YAxis
-            domain={[0, 50]}
-            ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50]}
+            domain={[0, 48]}
+            ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]}
             tickFormatter={(v) => `${v}%`}
-            tick={{ fill: "#e5e7eb", fontSize: 12 }}
+            tick={{ fill: "#e5e7eb", fontSize: 14 }}
             axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
             tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
             tickMargin={4}
@@ -467,6 +468,13 @@ const STAT_ROWS = useMemo(() => {
               value == null ? "-" : [`${value.toFixed(1)}%`, name === "A" ? label(a) : label(b)]
             }
             labelFormatter={(v) => `Pts: ${v}`}
+              contentStyle={{
+                backgroundColor: "#1e293b",
+                border: "1px solid rgba(148, 163, 184, 0.3)",
+                borderRadius: "8px",
+                padding: "12px",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)"
+              }}
           />
           <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 30 }} />
 
