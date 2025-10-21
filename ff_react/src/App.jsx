@@ -1,4 +1,3 @@
-// ff_react/src/App.jsx
 import { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
@@ -74,8 +73,14 @@ function usePlayers() {
           team: p.team ?? p.nfl_team ?? "",
           position: p.position ?? p.pos ?? "",
         }));
+        
+        // Sort alphabetically by name
+        const sorted = normalized.sort((a, b) => {
+          return a.name.localeCompare(b.name);
+        });
+        
         if (!cancelled) {
-          setPlayers(normalized);
+          setPlayers(sorted);
           setStatus("success");
         }
       } catch (e) {
@@ -448,8 +453,8 @@ const STAT_ROWS = useMemo(() => {
             label={{ value: getChartTitle(), position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
           />
           <YAxis
-            domain={[0, 30]}
-            ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]}
+            domain={[0, 50]}
+            ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50]}
             tickFormatter={(v) => `${v}%`}
             tick={{ fill: "#e5e7eb", fontSize: 12 }}
             axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
