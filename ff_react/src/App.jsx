@@ -465,18 +465,27 @@ const STAT_ROWS = useMemo(() => {
           />
           <Tooltip
             formatter={(value, name) =>
-              value == null ? "-" : [`${value.toFixed(1)}%`, name === "A" ? label(a) : label(b)]
+              value == null ? "-" : [`${value.toFixed(1)}%`, name]
             }
             labelFormatter={(v) => `Pts: ${v}`}
-              contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid rgba(148, 163, 184, 0.3)",
-                borderRadius: "8px",
-                padding: "12px",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)"
-              }}
+            contentStyle={{
+              backgroundColor: "#1e293b",
+              border: "1px solid rgba(148, 163, 184, 0.3)",
+              borderRadius: "8px",
+              padding: "12px",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)"
+            }}
+            labelStyle={{
+              color: "#94a3b8",
+              fontWeight: "500",
+              marginBottom: "4px"
+            }}
+            itemStyle={{
+              color: "#e5e7eb",
+              padding: "2px 0"
+            }}
           />
-          <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 30 }} />
+                    <Legend verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: 30 }} />
 
           {Number.isFinite(aMedian) && aMedian <= 26 && (
             <ReferenceLine
