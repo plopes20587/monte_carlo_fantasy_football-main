@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import "./App.css";
 import PropTypes from "prop-types";
+import { trackPlayerSelection, trackPlayerComparison, trackScoringFormatChange } from "./analytics";
+import CookieConsent from "./CookieConsent";
 
 /** API base
  *  Dev: uses Vite proxy at /api if VITE_API_BASE is not set
@@ -253,6 +255,13 @@ export default function App() {
   const [loadingProj, setLoadingProj] = useState(false);
   const [projErr, setProjErr] = useState("");
 
+  // Track page views on mount
+  useEffect(() => {
+    import("./analytics").then(({ trackPageView }) => {
+      trackPageView(window.location.pathname);
+    });
+  }, []);
+
   // Auto-select the first two players once loaded
   useEffect(() => {
     if (players.length >= 2 && !a && !b) {
@@ -280,6 +289,19 @@ export default function App() {
         if (ignore) return;
         setProjA(pA);
         setProjB(pB);
+
+        // Track player comparison when both players are loaded
+        if (pA && pB) {
+          const playerAMeta = players.find((p) => p.id === a);
+          const playerBMeta = players.find((p) => p.id === b);
+          if (playerAMeta && playerBMeta) {
+            trackPlayerComparison(
+              playerAMeta.name,
+              playerBMeta.name,
+              scoringFormat
+            );
+          }
+        }
       } catch (e) {
         console.error("Failed to load projections:", e);
         if (!ignore) setProjErr("Could not load projections. Try different players or check the API.");
@@ -290,7 +312,7 @@ export default function App() {
     return () => {
       ignore = true;
     };
-  }, [a, b]);
+  }, [a, b, players, scoringFormat]);
 
   // Friendly label for selects / legend
   const label = (id) => {
@@ -340,6 +362,7 @@ export default function App() {
 
   return (
     <div className="page">
+      <CookieConsent />
       <h1 className="title">NFL Player Compare</h1>
 
       <div className="hero">
@@ -361,7 +384,19 @@ export default function App() {
       {status === "error" && <div className="banner error">Could not load players: {error}</div>}
 
       <div className="selectors">
-        <select value={a} onChange={(e) => setA(e.target.value)} disabled={status !== "success"} aria-label="Select Player A">
+        <select
+          value={a}
+          onChange={(e) => {
+            const newPlayerId = e.target.value;
+            setA(newPlayerId);
+            const player = players.find((p) => p.id === newPlayerId);
+            if (player) {
+              trackPlayerSelection(player.name, player.position, 'A');
+            }
+          }}
+          disabled={status !== "success"}
+          aria-label="Select Player A"
+        >
           <option value="">{status === "loading" ? "Loading players..." : "Select Player A"}</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
@@ -369,7 +404,19 @@ export default function App() {
             </option>
           ))}
         </select>
-        <select value={b} onChange={(e) => setB(e.target.value)} disabled={status !== "success"} aria-label="Select Player B">
+        <select
+          value={b}
+          onChange={(e) => {
+            const newPlayerId = e.target.value;
+            setB(newPlayerId);
+            const player = players.find((p) => p.id === newPlayerId);
+            if (player) {
+              trackPlayerSelection(player.name, player.position, 'B');
+            }
+          }}
+          disabled={status !== "success"}
+          aria-label="Select Player B"
+        >
           <option value="">{status === "loading" ? "Loading players..." : "Select Player B"}</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
@@ -385,7 +432,11 @@ export default function App() {
           <label>Scoring Format:</label>
           <select
             value={scoringFormat}
-            onChange={(e) => setScoringFormat(e.target.value)}
+            onChange={(e) => {
+              const newFormat = e.target.value;
+              trackScoringFormatChange(scoringFormat, newFormat);
+              setScoringFormat(newFormat);
+            }}
           >
             <option value="full_ppr">Full PPR</option>
             <option value="half_ppr">Half PPR</option>

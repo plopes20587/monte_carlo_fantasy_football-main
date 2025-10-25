@@ -54,10 +54,15 @@ monte_carlo_fantasy_football-main/
 │   │   ├── App.jsx             # Main application component
 │   │   ├── App.css             # Application styles
 │   │   ├── main.jsx            # React entry point
-│   │   └── index.css           # Global styles
+│   │   ├── index.css           # Global styles
+│   │   ├── analytics.js        # Google Analytics integration
+│   │   ├── CookieConsent.jsx   # Cookie consent banner component
+│   │   └── CookieConsent.css   # Cookie consent styles
 │   ├── public/                 # Static assets
 │   ├── package.json            # Frontend dependencies
-│   └── vite.config.js          # Vite configuration
+│   ├── vite.config.js          # Vite configuration
+│   ├── .env.local              # Local environment variables (not in git)
+│   └── .env.example            # Environment variable template
 │
 ├── backend_calcs/              # Backend API
 │   ├── api.py                  # FastAPI application
@@ -65,6 +70,8 @@ monte_carlo_fantasy_football-main/
 │   └── venv/                   # Virtual environment (not in git)
 │
 ├── README.md                   # Project documentation
+├── CLAUDE.md                   # Project documentation (this file)
+├── ANALYTICS_SETUP.md          # Google Analytics setup guide
 └── .gitignore                  # Git ignore rules
 ```
 
@@ -112,6 +119,17 @@ monte_carlo_fantasy_football-main/
 - Left-aligned text for better readability
 - Visible scoring format selector with highlighted border
 - Loading states and error handling
+
+### 7. Analytics & Tracking
+- **Google Analytics 4 (GA4)** integration for traffic monitoring
+- **Cookie consent banner** for privacy compliance
+- **Custom event tracking**:
+  - Player selections (which players are compared)
+  - Scoring format changes
+  - Player comparisons
+- **Privacy-first approach**: Only tracks if user consents
+- **IP anonymization** enabled for GDPR compliance
+- Real-time user behavior insights
 
 ---
 
@@ -262,6 +280,7 @@ PYTHON_VERSION=3.13.0
 ### Frontend (`ff_react`)
 ```bash
 VITE_API_BASE=https://your-backend.onrender.com
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 ---
@@ -288,6 +307,7 @@ VITE_API_BASE=https://your-backend.onrender.com
 4. **Publish Directory**: `dist`
 5. **Environment Variables**:
    - `VITE_API_BASE=https://your-backend.onrender.com`
+   - `VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX` (your Google Analytics 4 measurement ID)
 
 ### Keeping Backend Awake (Free Tier)
 
@@ -374,16 +394,27 @@ const chartData = xVals.map((x) => ({
 **Solution**: Check that `chart_source_*` data exists in Supabase for selected players
 
 ### Issue: Players not loading
-**Solution**: 
+**Solution**:
 1. Check backend `/players` endpoint directly
 2. Verify Supabase connection
 3. Check browser console for errors
+
+### Issue: Analytics not tracking
+**Solution**:
+1. Verify `VITE_GA_MEASUREMENT_ID` is set in environment variables
+2. Check that cookie consent banner was accepted
+3. Open browser console and look for "Google Analytics initialized"
+4. Use GA4 DebugView or Realtime reports to verify events
+5. Disable ad blockers for testing
+6. See `ANALYTICS_SETUP.md` for detailed troubleshooting
 
 ---
 
 ## Future Enhancements
 
 ### Planned Features
+- [x] Analytics integration (Google Analytics 4) ✅
+- [x] Cookie consent banner for privacy compliance ✅
 - [ ] Add player search functionality in dropdowns
 - [ ] Add position filtering (QB, RB, WR, TE)
 - [ ] Add "Share Comparison" feature (URL with query params)
