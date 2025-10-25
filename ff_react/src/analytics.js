@@ -73,13 +73,12 @@ export const trackPlayerComparison = (playerA, playerB, scoringFormat) => {
   if (!hasConsent()) return;
 
   try {
-    trackEvent('Player Comparison', 'compare', `${playerA} vs ${playerB}`, null);
-    ReactGA.event({
-      category: 'Player Comparison',
-      action: 'compare',
+    // GA4 format - send custom parameters in the event
+    ReactGA.event('player_comparison', {
       player_a: playerA,
       player_b: playerB,
       scoring_format: scoringFormat,
+      comparison_label: `${playerA} vs ${playerB}`,
     });
   } catch (error) {
     console.error('Error tracking player comparison:', error);
@@ -89,7 +88,13 @@ export const trackPlayerComparison = (playerA, playerB, scoringFormat) => {
 export const trackPlayerSelection = (playerName, playerPosition, slot) => {
   if (!hasConsent()) return;
   try {
-    trackEvent('Player Selection', `select_${slot}`, `${playerName} (${playerPosition})`);
+    // GA4 format - send custom parameters
+    ReactGA.event('player_selection', {
+      player_name: playerName,
+      player_position: playerPosition,
+      slot: slot,
+      selection_label: `${playerName} (${playerPosition})`,
+    });
   } catch (error) {
     console.error('Error tracking player selection:', error);
   }
@@ -98,7 +103,12 @@ export const trackPlayerSelection = (playerName, playerPosition, slot) => {
 export const trackScoringFormatChange = (oldFormat, newFormat) => {
   if (!hasConsent()) return;
   try {
-    trackEvent('Scoring Format', 'change', `${oldFormat} → ${newFormat}`);
+    // GA4 format - send custom parameters
+    ReactGA.event('scoring_format_change', {
+      old_format: oldFormat,
+      new_format: newFormat,
+      change_label: `${oldFormat} → ${newFormat}`,
+    });
   } catch (error) {
     console.error('Error tracking scoring format change:', error);
   }
