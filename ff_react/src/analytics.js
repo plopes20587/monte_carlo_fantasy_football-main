@@ -26,6 +26,8 @@ export const initGA = () => {
     ReactGA.initialize(measurementId, {
       gaOptions: {
         anonymizeIp: true, // Privacy compliance
+        cookieDomain: 'auto', // Automatically detect domain
+        cookieFlags: 'SameSite=None;Secure', // Allow cross-site cookies on HTTPS
       },
       gtagOptions: {
         debug_mode: false, // Set to true for debugging
