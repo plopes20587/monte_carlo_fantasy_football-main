@@ -12,7 +12,11 @@ import {
 } from "recharts";
 import "./App.css";
 import PropTypes from "prop-types";
-import { trackPlayerSelection, trackPlayerComparison, trackScoringFormatChange } from "./analytics";
+import {
+  trackPlayerSelection,
+  trackPlayerComparison,
+  trackScoringFormatChange,
+} from "./analytics";
 import CookieConsent from "./CookieConsent";
 
 /** API base
@@ -20,31 +24,103 @@ import CookieConsent from "./CookieConsent";
  *  Prod: set VITE_API_BASE to your backend origin
  */
 const API_BASE = import.meta.env.PROD
-  ? (import.meta.env.VITE_API_BASE || "")
-  : (import.meta.env.VITE_API_BASE || "/api");
+  ? import.meta.env.VITE_API_BASE || ""
+  : import.meta.env.VITE_API_BASE || "/api";
 
 const BASE_STAT_ROWS = [
-  { label: "pass tds", rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] } },
-  { label: "pass INTs", rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] } },
-  { label: "rush/rec TDs", rules: { include: [/rush.*rec|rec.*rush/, /td/], exclude: [/pass|sample|chart/] } },
-  { label: "reception yards", rules: { include: [/reception/, /yard/], exclude: [/rush|pass|sample|chart/] } },
-  { label: "rush yards", rules: { include: [/rushing?/, /(yard|yds?)/], exclude: [/rec|pass|sample|chart/] } },
-  { label: "receptions", rules: { include: [/receptions?$|^rec(?!eive)/], exclude: [/yard|td|sample|chart/] } },
-  { label: "pass yards", rules: { include: [/passing?/, /(yard|yds?)/], exclude: [/rec|rush|sample|chart/] } },
+  {
+    label: "pass tds",
+    rules: { include: [/pass|passing/, /td/], exclude: [/sample|chart/] },
+  },
+  {
+    label: "pass INTs",
+    rules: { include: [/pass/, /interception/], exclude: [/sample|chart/] },
+  },
+  {
+    label: "rush/rec TDs",
+    rules: {
+      include: [/rush.*rec|rec.*rush/, /td/],
+      exclude: [/pass|sample|chart/],
+    },
+  },
+  {
+    label: "reception yards",
+    rules: {
+      include: [/reception/, /yard/],
+      exclude: [/rush|pass|sample|chart/],
+    },
+  },
+  {
+    label: "rush yards",
+    rules: {
+      include: [/rushing?/, /(yard|yds?)/],
+      exclude: [/rec|pass|sample|chart/],
+    },
+  },
+  {
+    label: "receptions",
+    rules: {
+      include: [/receptions?$|^rec(?!eive)/],
+      exclude: [/yard|td|sample|chart/],
+    },
+  },
+  {
+    label: "pass yards",
+    rules: {
+      include: [/passing?/, /(yard|yds?)/],
+      exclude: [/rec|rush|sample|chart/],
+    },
+  },
 ];
 
 const SCORING_SPECIFIC_ROWS = {
   full_ppr: [
-    { label: "full-PPR mean", rules: { include: [/(total|score)/, /full/, /ppr/], exclude: [/median|sample|chart|half|std|standard|no/] } },
-    { label: "full-PPR median", rules: { include: [/full/, /ppr/, /median/], exclude: [/sample|chart|half|no|std|standard/] } },
+    {
+      label: "full-PPR mean",
+      rules: {
+        include: [/(total|score)/, /full/, /ppr/],
+        exclude: [/median|sample|chart|half|std|standard|no/],
+      },
+    },
+    {
+      label: "full-PPR median",
+      rules: {
+        include: [/full/, /ppr/, /median/],
+        exclude: [/sample|chart|half|no|std|standard/],
+      },
+    },
   ],
   half_ppr: [
-    { label: "half-PPR mean", rules: { include: [/(total|score)/, /half/, /ppr/], exclude: [/median|sample|chart|full|std|standard|no/] } },
-    { label: "half-PPR median", rules: { include: [/half/, /ppr/, /median/], exclude: [/sample|chart|full|no|std|standard/] } },
+    {
+      label: "half-PPR mean",
+      rules: {
+        include: [/(total|score)/, /half/, /ppr/],
+        exclude: [/median|sample|chart|full|std|standard|no/],
+      },
+    },
+    {
+      label: "half-PPR median",
+      rules: {
+        include: [/half/, /ppr/, /median/],
+        exclude: [/sample|chart|full|no|std|standard/],
+      },
+    },
   ],
   no_ppr: [
-    { label: "no-PPR mean", rules: { include: [/(total|score)/, /(no|std|standard)/, /ppr/], exclude: [/median|sample|chart|full|half/] } },
-    { label: "no-PPR median", rules: { include: [/(no|std|standard)/, /median/], exclude: [/sample|chart|full|half|ppr/] } },
+    {
+      label: "no-PPR mean",
+      rules: {
+        include: [/(total|score)/, /(no|std|standard)/, /ppr/],
+        exclude: [/median|sample|chart|full|half/],
+      },
+    },
+    {
+      label: "no-PPR median",
+      rules: {
+        include: [/(no|std|standard)/, /median/],
+        exclude: [/sample|chart|full|half|ppr/],
+      },
+    },
   ],
 };
 
@@ -65,7 +141,6 @@ const SCORING_META = {
     chartKey: "chart_source_no_ppr",
   },
 };
-
 
 /* ---------------- formatting helper ---------------- */
 
@@ -111,19 +186,23 @@ function usePlayers() {
         const res = await fetch(`${API_BASE}/players`, { credentials: "omit" });
         if (!res.ok) throw new Error(`HTTP ${res.status} on /players`);
         const data = await res.json();
-        const list = Array.isArray(data) ? data : Array.isArray(data?.players) ? data.players : [];
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.players)
+          ? data.players
+          : [];
         const normalized = list.map((p, i) => ({
           id: p.id ?? p.player_id ?? p.slug ?? String(i),
           name: p.name ?? p.player_name ?? "Unknown",
           team: p.team ?? p.nfl_team ?? "",
           position: p.position ?? p.pos ?? "",
         }));
-        
+
         // Sort alphabetically by name
         const sorted = normalized.sort((a, b) => {
           return a.name.localeCompare(b.name);
         });
-        
+
         if (!cancelled) {
           setPlayers(sorted);
           setStatus("success");
@@ -145,7 +224,9 @@ function usePlayers() {
 }
 
 async function fetchProjection(playerId) {
-  const url = `${API_BASE}/projections?player_id=${encodeURIComponent(playerId)}`;
+  const url = `${API_BASE}/projections?player_id=${encodeURIComponent(
+    playerId
+  )}`;
   const res = await fetch(url, { credentials: "omit" });
   if (!res.ok) {
     const text = await res.text();
@@ -156,7 +237,8 @@ async function fetchProjection(playerId) {
   // Unwrap common shapes
   if (Array.isArray(data)) return data[0] ?? null;
   if (data && typeof data === "object") {
-    if (data.projection && typeof data.projection === "object") return data.projection;
+    if (data.projection && typeof data.projection === "object")
+      return data.projection;
     if (data.data && typeof data.data === "object") return data.data;
     return data;
   }
@@ -187,7 +269,8 @@ function resolveByRegexFlat(obj, { include = [], exclude = [] } = {}) {
   if (!obj || typeof obj !== "object") return undefined;
   const flat = flattenObject(obj);
   let best = null;
-  const isScalar = (v) => v == null || ["string", "number", "boolean"].includes(typeof v);
+  const isScalar = (v) =>
+    v == null || ["string", "number", "boolean"].includes(typeof v);
 
   for (const k of Object.keys(flat)) {
     const key = k.toLowerCase();
@@ -304,7 +387,10 @@ export default function App() {
         }
       } catch (e) {
         console.error("Failed to load projections:", e);
-        if (!ignore) setProjErr("Could not load projections. Try different players or check the API.");
+        if (!ignore)
+          setProjErr(
+            "Could not load projections. Try different players or check the API."
+          );
       } finally {
         if (!ignore) setLoadingProj(false);
       }
@@ -324,7 +410,8 @@ export default function App() {
 
   // Dynamic rows based on scoring format
   const STAT_ROWS = useMemo(() => {
-    const extraRows = SCORING_SPECIFIC_ROWS[scoringFormat] || SCORING_SPECIFIC_ROWS.half_ppr;
+    const extraRows =
+      SCORING_SPECIFIC_ROWS[scoringFormat] || SCORING_SPECIFIC_ROWS.half_ppr;
     return [...BASE_STAT_ROWS, ...extraRows];
   }, [scoringFormat]);
 
@@ -353,6 +440,29 @@ export default function App() {
     [aSeries, bSeries]
   );
 
+  // Calculate max y value to determine if we need to extend y-axis beyond 30%
+  const maxYValue = useMemo(() => {
+    if (!chartData.length) return 30;
+    const maxA = Math.max(...chartData.map((d) => d.A ?? 0));
+    const maxB = Math.max(...chartData.map((d) => d.B ?? 0));
+    const maxVal = Math.max(maxA, maxB);
+
+    // If max exceeds 30%, round up to nearest 10
+    if (maxVal > 30) {
+      return Math.ceil(maxVal / 10) * 10;
+    }
+    return 30;
+  }, [chartData]);
+
+  // Generate ticks dynamically based on max value
+  const yAxisTicks = useMemo(() => {
+    const ticks = [];
+    for (let i = 0; i <= maxYValue; i += 2) {
+      ticks.push(i);
+    }
+    return ticks;
+  }, [maxYValue]);
+
   const aMedian = projA ? Number(projA[scoringMeta.medianKey]) : null;
   const bMedian = projB ? Number(projB[scoringMeta.medianKey]) : null;
 
@@ -367,12 +477,19 @@ export default function App() {
 
       <div className="hero">
         <p className="subtitle">
-          Compare two NFL players using median, ceiling, and outcome distributions.
+          Compare two NFL players using mean, median, and outcome distributions.
         </p>
         <ul className="steps">
-          <li><span className="step-dot">1</span> Pick player A and player B</li>
-          <li><span className="step-dot">2</span> Review the stat table</li>
-          <li><span className="step-dot">3</span> Use the distribution chart to gauge upside and risk.</li>
+          <li>
+            <span className="step-dot">1</span> Pick player A and player B
+          </li>
+          <li>
+            <span className="step-dot">2</span> Review the stat table
+          </li>
+          <li>
+            <span className="step-dot">3</span> Use the distribution chart to
+            gauge upside and risk.
+          </li>
         </ul>
         <div className="badges">
           <span className="badge">Full-PPR</span>
@@ -381,7 +498,9 @@ export default function App() {
         </div>
       </div>
 
-      {status === "error" && <div className="banner error">Could not load players: {error}</div>}
+      {status === "error" && (
+        <div className="banner error">Could not load players: {error}</div>
+      )}
 
       <div className="selectors">
         <select
@@ -391,16 +510,21 @@ export default function App() {
             setA(newPlayerId);
             const player = players.find((p) => p.id === newPlayerId);
             if (player) {
-              trackPlayerSelection(player.name, player.position, 'A');
+              trackPlayerSelection(player.name, player.position, "A");
             }
           }}
           disabled={status !== "success"}
           aria-label="Select Player A"
         >
-          <option value="">{status === "loading" ? "Loading players..." : "Select Player A"}</option>
+          <option value="">
+            {status === "loading" ? "Loading players..." : "Select Player A"}
+          </option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}{p.team ? ` (${p.team}` : ""}{p.position ? ` ${p.position}` : ""}{p.team ? ")" : ""}
+              {p.name}
+              {p.team ? ` (${p.team}` : ""}
+              {p.position ? ` ${p.position}` : ""}
+              {p.team ? ")" : ""}
             </option>
           ))}
         </select>
@@ -411,16 +535,21 @@ export default function App() {
             setB(newPlayerId);
             const player = players.find((p) => p.id === newPlayerId);
             if (player) {
-              trackPlayerSelection(player.name, player.position, 'B');
+              trackPlayerSelection(player.name, player.position, "B");
             }
           }}
           disabled={status !== "success"}
           aria-label="Select Player B"
         >
-          <option value="">{status === "loading" ? "Loading players..." : "Select Player B"}</option>
+          <option value="">
+            {status === "loading" ? "Loading players..." : "Select Player B"}
+          </option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}{p.team ? ` (${p.team}` : ""}{p.position ? ` ${p.position}` : ""}{p.team ? ")" : ""}
+              {p.name}
+              {p.team ? ` (${p.team}` : ""}
+              {p.position ? ` ${p.position}` : ""}
+              {p.team ? ")" : ""}
             </option>
           ))}
         </select>
@@ -460,11 +589,20 @@ export default function App() {
                   <strong>{label(a)}</strong>
                   <strong>{label(b)}</strong>
                   {tableRows.map(({ rowLabel, aVal, bVal }) => (
-                    <FragmentRow key={rowLabel} title={rowLabel} a={aVal} b={bVal} />
+                    <FragmentRow
+                      key={rowLabel}
+                      title={rowLabel}
+                      a={aVal}
+                      b={bVal}
+                    />
                   ))}
                 </div>
               )}
-              {projErr && <div className="banner error" style={{ marginTop: 8 }}>{projErr}</div>}
+              {projErr && (
+                <div className="banner error" style={{ marginTop: 8 }}>
+                  {projErr}
+                </div>
+              )}
             </div>
 
             {/* RIGHT: chart */}
@@ -473,7 +611,7 @@ export default function App() {
               {!aSeries && !bSeries ? (
                 <div className="muted">No distribution available.</div>
               ) : (
-                <div className="chart-wrap" style={{ width: "100%", height: 500 }}>
+                <div className="chart-wrap">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={chartData}
@@ -497,18 +635,25 @@ export default function App() {
                         type="number"
                         dataKey="x"
                         domain={[0, 26]}
-                        ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]}
+                        ticks={[
+                          0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26,
+                        ]}
                         allowDecimals={false}
                         allowDataOverflow={false}
                         tickMargin={10}
                         tick={{ fill: "#e5e7eb", fontSize: 14 }}
                         axisLine={{ stroke: "rgba(148,163,184,0.4)" }}
                         tickLine={{ stroke: "rgba(148,163,184,0.4)" }}
-                        label={{ value: scoringMeta.chartTitle, position: "insideBottom", offset: -20, fill: "#e5e7eb" }}
+                        label={{
+                          value: scoringMeta.chartTitle,
+                          position: "insideBottom",
+                          offset: -20,
+                          fill: "#e5e7eb",
+                        }}
                       />
                       <YAxis
-                        domain={[0, 48]}
-                        ticks={[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]}
+                        domain={[0, maxYValue]}
+                        ticks={yAxisTicks}
                         tickFormatter={(v) => `${v}%`}
                         tick={{ fill: "#e5e7eb", fontSize: 14 }}
                         axisLine={{ stroke: "rgba(148,163,184,0.4)" }}

@@ -415,6 +415,8 @@ const chartData = xVals.map((x) => ({
 ### Planned Features
 - [x] Analytics integration (Google Analytics 4) ✅
 - [x] Cookie consent banner for privacy compliance ✅
+- [ ] Adjust chart x-axis to show points in increments of 2 instead of 1
+- [ ] Reduce y-axis ceiling to 30% for better visualization of probability distribution
 - [ ] Add player search functionality in dropdowns
 - [ ] Add position filtering (QB, RB, WR, TE)
 - [ ] Add "Share Comparison" feature (URL with query params)

@@ -5,23 +5,31 @@
   text-align: center;
 }
 
-:root{
+:root {
   --card-bg: none;
   --card-border: #e5e7eb;
-  --card-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   --text-muted: #fff;
   --title: #fff;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-.page{
+.page {
   max-width: 100%;
   margin: 40px auto;
   padding: 16px;
 }
 
-.title{
+@media (min-width: 769px) {
+  .page {
+    min-width: 1000px;
+  }
+}
+
+.title {
   margin: 40px;
   color: var(--title);
   font-weight: 700;
@@ -66,24 +74,24 @@
   color: #ffffff; /* Make bold text even brighter */
 }
 
-.step-dot{
-  width: 22px; 
-  height: 22px; 
+.step-dot {
+  width: 22px;
+  height: 22px;
   flex: 0 0 22px;
-  display: inline-flex; 
-  align-items: center; 
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: #111827;
   color: #e5e7eb;
-  font-size: 12px; 
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.badges{
-  display: flex; 
-  flex-wrap: wrap; 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
 }
@@ -188,17 +196,17 @@
 }
 
 /* ---- Content area ---- */
-.content{
+.content {
   margin-top: 20px;
   max-width: 100%;
   overflow: hidden;
 }
 
-.empty{
+.empty {
   color: var(--text-muted);
 }
 
-.two-col{
+.two-col {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.75fr);
   gap: 16px;
@@ -206,7 +214,7 @@
   margin-top: 8px;
 }
 
-.card{
+.card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
@@ -216,27 +224,26 @@
   min-width: 0;
 }
 
-.muted{
-  opacity: .7;
+.muted {
+  opacity: 0.7;
 }
 
 /* ---- Comparison table ---- */
-.compare-grid{
+.compare-grid {
   display: grid;
   grid-template-columns: 1.1fr 1fr 1fr;
   gap: 10px;
   align-items: center;
 }
 
-.row-label{
+.row-label {
   text-transform: capitalize;
 }
 
 /* ---- Chart styling ---- */
-.chart-card { 
+.chart-card {
   background: #0f172a;
   color: #e5e7eb;
-  /*min-height: 450px;*/
   overflow: visible;
   padding: 12px 8px; /* Reduce padding on chart card */
 }
@@ -249,18 +256,13 @@
 
 .chart-wrap {
   width: 100%;
-  height: 450px;
+  height: 550px;
   margin-left: -15px;
   margin-right: -15px;
 }
 
-
 /* Tablet (768px and below) */
 @media (max-width: 768px) {
-  .page {
-    padding: 20px 16px;
-  }
-
   .title {
     font-size: 2rem;
   }

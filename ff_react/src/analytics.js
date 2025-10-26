@@ -1,9 +1,9 @@
-import ReactGA from 'react-ga4';
+import ReactGA from "react-ga4";
 
 // Check if user has consented to analytics
 const hasConsent = () => {
-  const consent = localStorage.getItem('analytics-consent');
-  return consent === 'true';
+  const consent = localStorage.getItem("analytics-consent");
+  return consent === "true";
 };
 
 // Initialize Google Analytics
@@ -11,14 +11,16 @@ export const initGA = () => {
   const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
   if (!measurementId) {
-    console.warn('Google Analytics measurement ID not found. Analytics disabled.');
+    console.warn(
+      "Google Analytics measurement ID not found. Analytics disabled."
+    );
     return;
   }
 
   // Only initialize if user has consented or hasn't been asked yet
-  const consent = localStorage.getItem('analytics-consent');
-  if (consent === 'false') {
-    console.log('Google Analytics disabled by user preference');
+  const consent = localStorage.getItem("analytics-consent");
+  if (consent === "false") {
+    console.log("Google Analytics disabled by user preference");
     return;
   }
 
@@ -26,16 +28,16 @@ export const initGA = () => {
     ReactGA.initialize(measurementId, {
       gaOptions: {
         anonymizeIp: true, // Privacy compliance
-        cookieDomain: 'auto', // Automatically detect domain
-        cookieFlags: 'SameSite=None;Secure', // Allow cross-site cookies on HTTPS
+        cookieDomain: "auto", // Automatically detect domain
+        cookieFlags: "SameSite=None;Secure", // Allow cross-site cookies on HTTPS
       },
       gtagOptions: {
         debug_mode: false, // Set to true for debugging
       },
     });
-    console.log('Google Analytics initialized successfully');
+    console.log("Google Analytics initialized successfully");
   } catch (error) {
-    console.error('Failed to initialize Google Analytics:', error);
+    console.error("Failed to initialize Google Analytics:", error);
   }
 };
 
@@ -43,9 +45,9 @@ export const initGA = () => {
 export const trackPageView = (path) => {
   if (!hasConsent()) return;
   try {
-    ReactGA.send({ hitType: 'pageview', page: path });
+    ReactGA.send({ hitType: "pageview", page: path });
   } catch (error) {
-    console.error('Error tracking page view:', error);
+    console.error("Error tracking page view:", error);
   }
 };
 
@@ -64,7 +66,7 @@ export const trackEvent = (category, action, label = null, value = null) => {
 
     ReactGA.event(eventParams);
   } catch (error) {
-    console.error('Error tracking event:', error);
+    console.error("Error tracking event:", error);
   }
 };
 
@@ -73,43 +75,42 @@ export const trackPlayerComparison = (playerA, playerB, scoringFormat) => {
   if (!hasConsent()) return;
 
   try {
-    // GA4 format - send custom parameters in the event
-    ReactGA.event('player_comparison', {
+    trackEvent(
+      "Player Comparison",
+      "compare",
+      `${playerA} vs ${playerB}`,
+      null
+    );
+    ReactGA.event({
+      category: "Player Comparison",
+      action: "compare",
       player_a: playerA,
       player_b: playerB,
       scoring_format: scoringFormat,
-      comparison_label: `${playerA} vs ${playerB}`,
     });
   } catch (error) {
-    console.error('Error tracking player comparison:', error);
+    console.error("Error tracking player comparison:", error);
   }
 };
 
 export const trackPlayerSelection = (playerName, playerPosition, slot) => {
   if (!hasConsent()) return;
   try {
-    // GA4 format - send custom parameters
-    ReactGA.event('player_selection', {
-      player_name: playerName,
-      player_position: playerPosition,
-      slot: slot,
-      selection_label: `${playerName} (${playerPosition})`,
-    });
+    trackEvent(
+      "Player Selection",
+      `select_${slot}`,
+      `${playerName} (${playerPosition})`
+    );
   } catch (error) {
-    console.error('Error tracking player selection:', error);
+    console.error("Error tracking player selection:", error);
   }
 };
 
 export const trackScoringFormatChange = (oldFormat, newFormat) => {
   if (!hasConsent()) return;
   try {
-    // GA4 format - send custom parameters
-    ReactGA.event('scoring_format_change', {
-      old_format: oldFormat,
-      new_format: newFormat,
-      change_label: `${oldFormat} → ${newFormat}`,
-    });
+    trackEvent("Scoring Format", "change", `${oldFormat} → ${newFormat}`);
   } catch (error) {
-    console.error('Error tracking scoring format change:', error);
+    console.error("Error tracking scoring format change:", error);
   }
 };
