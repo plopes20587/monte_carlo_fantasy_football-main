@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import {
   LineChart,
   Line,
@@ -10,6 +10,7 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts";
+import Select from "react-select";
 import "./App.css";
 import PropTypes from "prop-types";
 import {
@@ -142,6 +143,145 @@ const SCORING_META = {
   },
 };
 
+/* ---------------- react-select custom styles ---------------- */
+
+const customSelectStyles = {
+  control: (provided, state) => ({
+    ...provided,
+    backgroundColor: "#1e293b",
+    borderColor: state.isFocused ? "#3b82f6" : "rgba(148, 163, 184, 0.3)",
+    borderWidth: "2px",
+    borderRadius: "8px",
+    padding: "4px 8px",
+    minHeight: "48px",
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "none",
+    cursor: "pointer",
+    "&:hover": {
+      borderColor: "#3b82f6",
+    },
+  }),
+  menu: (provided) => ({
+    ...provided,
+    backgroundColor: "#1e293b",
+    border: "2px solid rgba(148, 163, 184, 0.3)",
+    borderRadius: "8px",
+    marginTop: "4px",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+  }),
+  menuList: (provided) => ({
+    ...provided,
+    padding: "4px",
+    maxHeight: "300px",
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isFocused
+      ? "#334155"
+      : state.isSelected
+      ? "#3b82f6"
+      : "transparent",
+    color: "#e5e7eb",
+    padding: "12px 16px",
+    cursor: "pointer",
+    borderRadius: "6px",
+    fontSize: "16px",
+    textAlign: "left",
+    "&:active": {
+      backgroundColor: "#3b82f6",
+    },
+  }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: "#e5e7eb",
+    fontSize: "16px",
+    textAlign: "left",
+  }),
+  input: (provided) => ({
+    ...provided,
+    color: "#e5e7eb",
+    fontSize: "16px",
+    textAlign: "left",
+  }),
+  placeholder: (provided) => ({
+    ...provided,
+    color: "#94a3b8",
+    fontSize: "16px",
+    textAlign: "left",
+  }),
+  indicatorSeparator: () => ({
+    display: "none",
+  }),
+  dropdownIndicator: (provided) => ({
+    ...provided,
+    color: "#94a3b8",
+    "&:hover": {
+      color: "#e5e7eb",
+    },
+  }),
+  clearIndicator: (provided) => ({
+    ...provided,
+    color: "#94a3b8",
+    "&:hover": {
+      color: "#ef4444",
+    },
+  }),
+};
+
+/* ---------------- custom react-select components ---------------- */
+
+const DropdownIndicator = memo(function DropdownIndicator(props) {
+  const { selectProps } = props;
+  const isMenuOpen = selectProps.menuIsOpen;
+
+  return (
+    <div style={{ padding: "0 8px", display: "flex", alignItems: "center" }}>
+      {isMenuOpen ? (
+        // Search icon (magnifying glass)
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ color: "#94a3b8" }}
+        >
+          <path
+            d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        // Chevron down icon
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ color: "#94a3b8" }}
+        >
+          <path
+            d="M5 7.5L10 12.5L15 7.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </div>
+  );
+});
+
+DropdownIndicator.propTypes = {
+  selectProps: PropTypes.shape({
+    menuIsOpen: PropTypes.bool,
+  }).isRequired,
+};
+
 /* ---------------- formatting helper ---------------- */
 
 const fmt = (v) => {
@@ -150,12 +290,12 @@ const fmt = (v) => {
   if (!Number.isFinite(n)) return String(v);
   return n % 1 === 0
     ? n.toLocaleString()
-    : n.toLocaleString(undefined, { maximumFractionDigits: 3 });
+    : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 };
 
 /* ---------------- tiny table row component ---------------- */
 
-function FragmentRow({ title, a, b }) {
+const FragmentRow = memo(function FragmentRow({ title, a, b }) {
   return (
     <>
       <div className="row-label">{title}</div>
@@ -163,7 +303,7 @@ function FragmentRow({ title, a, b }) {
       <div>{fmt(b)}</div>
     </>
   );
-}
+});
 FragmentRow.propTypes = {
   title: PropTypes.string.isRequired,
   a: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -338,6 +478,20 @@ export default function App() {
   const [loadingProj, setLoadingProj] = useState(false);
   const [projErr, setProjErr] = useState("");
 
+  const [menuAOpen, setMenuAOpen] = useState(false);
+  const [menuBOpen, setMenuBOpen] = useState(false);
+
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
+
+  // Track window resize for responsive chart ticks
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Track page views on mount
   useEffect(() => {
     import("./analytics").then(({ trackPageView }) => {
@@ -401,12 +555,30 @@ export default function App() {
   }, [a, b, players, scoringFormat]);
 
   // Friendly label for selects / legend
-  const label = (id) => {
+  const label = useCallback((id) => {
     const meta = players.find((x) => x.id === id);
     if (!meta) return id || "";
     const affix = [meta.team, meta.position].filter(Boolean).join(" ");
     return affix ? `${meta.name} (${affix})` : meta.name;
-  };
+  }, [players]);
+
+  // Format players for react-select
+  const playerOptions = useMemo(() => {
+    return players.map((p) => {
+      const affix = [p.team, p.position].filter(Boolean).join(" ");
+      return {
+        value: p.id,
+        label: affix ? `${p.name} (${affix})` : p.name,
+      };
+    });
+  }, [players]);
+
+  // Scoring format options for react-select
+  const scoringOptions = [
+    { value: "full_ppr", label: "Full PPR" },
+    { value: "half_ppr", label: "Half PPR" },
+    { value: "no_ppr", label: "No PPR" },
+  ];
 
   // Dynamic rows based on scoring format
   const STAT_ROWS = useMemo(() => {
@@ -416,11 +588,13 @@ export default function App() {
   }, [scoringFormat]);
 
   // Build table row values via regex resolver on the FLATTENED keys
-  const tableRows = STAT_ROWS.map(({ label: rowLabel, rules }) => {
-    const aVal = asNumberIfPossible(resolveByRegexFlat(projA, rules));
-    const bVal = asNumberIfPossible(resolveByRegexFlat(projB, rules));
-    return { rowLabel, aVal, bVal };
-  });
+  const tableRows = useMemo(() => {
+    return STAT_ROWS.map(({ label: rowLabel, rules }) => {
+      const aVal = asNumberIfPossible(resolveByRegexFlat(projA, rules));
+      const bVal = asNumberIfPossible(resolveByRegexFlat(projB, rules));
+      return { rowLabel, aVal, bVal };
+    });
+  }, [STAT_ROWS, projA, projB]);
 
   const scoringMeta = SCORING_META[scoringFormat] || SCORING_META.half_ppr;
 
@@ -440,18 +614,18 @@ export default function App() {
     [aSeries, bSeries]
   );
 
-  // Calculate max y value to determine if we need to extend y-axis beyond 30%
+  // Calculate max y value to determine if we need to extend y-axis beyond 20%
   const maxYValue = useMemo(() => {
-    if (!chartData.length) return 30;
+    if (!chartData.length) return 20;
     const maxA = Math.max(...chartData.map((d) => d.A ?? 0));
     const maxB = Math.max(...chartData.map((d) => d.B ?? 0));
     const maxVal = Math.max(maxA, maxB);
 
-    // If max exceeds 30%, round up to nearest 10
-    if (maxVal > 30) {
+    // If max exceeds 20%, round up to nearest 10
+    if (maxVal > 20) {
       return Math.ceil(maxVal / 10) * 10;
     }
-    return 30;
+    return 20;
   }, [chartData]);
 
   // Generate ticks dynamically based on max value
@@ -462,6 +636,20 @@ export default function App() {
     }
     return ticks;
   }, [maxYValue]);
+
+  // Responsive x-axis ticks based on screen size
+  const xAxisTicks = useMemo(() => {
+    if (windowWidth < 480) {
+      // Mobile: every 6 points
+      return [0, 6, 12, 18, 24];
+    } else if (windowWidth < 768) {
+      // Tablet: every 4 points
+      return [0, 4, 8, 12, 16, 20, 24];
+    } else {
+      // Desktop: every 2 points
+      return [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26];
+    }
+  }, [windowWidth]);
 
   const aMedian = projA ? Number(projA[scoringMeta.medianKey]) : null;
   const bMedian = projB ? Number(projB[scoringMeta.medianKey]) : null;
@@ -503,76 +691,77 @@ export default function App() {
       )}
 
       <div className="selectors">
-        <select
-          value={a}
-          onChange={(e) => {
-            const newPlayerId = e.target.value;
+        <Select
+          value={playerOptions.find((opt) => opt.value === a) || null}
+          onChange={(selectedOption) => {
+            const newPlayerId = selectedOption?.value || "";
             setA(newPlayerId);
-            const player = players.find((p) => p.id === newPlayerId);
-            if (player) {
-              trackPlayerSelection(player.name, player.position, "A");
+            if (selectedOption) {
+              const player = players.find((p) => p.id === selectedOption.value);
+              if (player) {
+                trackPlayerSelection(player.name, player.position, "A");
+              }
             }
           }}
-          disabled={status !== "success"}
+          options={playerOptions}
+          styles={customSelectStyles}
+          components={{ DropdownIndicator }}
+          placeholder={
+            status === "loading" ? "Loading players..." : "Search players..."
+          }
+          isDisabled={status !== "success"}
+          isSearchable={true}
+          isClearable={false}
+          controlShouldRenderValue={!menuAOpen}
+          onMenuOpen={() => setMenuAOpen(true)}
+          onMenuClose={() => setMenuAOpen(false)}
           aria-label="Select Player A"
-        >
-          <option value="">
-            {status === "loading" ? "Loading players..." : "Select Player A"}
-          </option>
-          {players.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-              {p.team ? ` (${p.team}` : ""}
-              {p.position ? ` ${p.position}` : ""}
-              {p.team ? ")" : ""}
-            </option>
-          ))}
-        </select>
-        <select
-          value={b}
-          onChange={(e) => {
-            const newPlayerId = e.target.value;
+        />
+        <Select
+          value={playerOptions.find((opt) => opt.value === b) || null}
+          onChange={(selectedOption) => {
+            const newPlayerId = selectedOption?.value || "";
             setB(newPlayerId);
-            const player = players.find((p) => p.id === newPlayerId);
-            if (player) {
-              trackPlayerSelection(player.name, player.position, "B");
+            if (selectedOption) {
+              const player = players.find((p) => p.id === selectedOption.value);
+              if (player) {
+                trackPlayerSelection(player.name, player.position, "B");
+              }
             }
           }}
-          disabled={status !== "success"}
+          options={playerOptions}
+          styles={customSelectStyles}
+          components={{ DropdownIndicator }}
+          placeholder={
+            status === "loading" ? "Loading players..." : "Search players..."
+          }
+          isDisabled={status !== "success"}
+          isSearchable={true}
+          isClearable={false}
+          controlShouldRenderValue={!menuBOpen}
+          onMenuOpen={() => setMenuBOpen(true)}
+          onMenuClose={() => setMenuBOpen(false)}
           aria-label="Select Player B"
-        >
-          <option value="">
-            {status === "loading" ? "Loading players..." : "Select Player B"}
-          </option>
-          {players.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-              {p.team ? ` (${p.team}` : ""}
-              {p.position ? ` ${p.position}` : ""}
-              {p.team ? ")" : ""}
-            </option>
-          ))}
-        </select>
-      </div>
+        />
 
-      {/* Scoring Format Selector */}
-      {(a || b) && (
+        {/* Scoring Format Selector */}
         <div className="scoring-selector">
           <label>Scoring Format:</label>
-          <select
-            value={scoringFormat}
-            onChange={(e) => {
-              const newFormat = e.target.value;
+          <Select
+            value={scoringOptions.find((opt) => opt.value === scoringFormat)}
+            onChange={(selectedOption) => {
+              const newFormat = selectedOption.value;
               trackScoringFormatChange(scoringFormat, newFormat);
               setScoringFormat(newFormat);
             }}
-          >
-            <option value="full_ppr">Full PPR</option>
-            <option value="half_ppr">Half PPR</option>
-            <option value="no_ppr">No PPR</option>
-          </select>
+            options={scoringOptions}
+            styles={customSelectStyles}
+            isSearchable={false}
+            isClearable={false}
+            className="scoring-select"
+          />
         </div>
-      )}
+      </div>
 
       <div className="content">
         {showEmpty ? (
@@ -635,9 +824,7 @@ export default function App() {
                         type="number"
                         dataKey="x"
                         domain={[0, 26]}
-                        ticks={[
-                          0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26,
-                        ]}
+                        ticks={xAxisTicks}
                         allowDecimals={false}
                         allowDataOverflow={false}
                         tickMargin={10}

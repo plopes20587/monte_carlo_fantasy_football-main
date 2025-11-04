@@ -80,9 +80,12 @@ monte_carlo_fantasy_football-main/
 ## Key Features
 
 ### 1. Player Selection
-- **Alphabetically sorted dropdown** with all NFL players
+- **Searchable dropdown** (react-select) with all NFL players
+- **Alphabetically sorted** player list for easy browsing
+- **Type to search** - filter players by name as you type
 - Shows player name, team, and position in format: `Player Name (TEAM POS)`
 - Auto-selects first two players on load
+- Dark theme styling matching the app design
 
 ### 2. Scoring Format Toggle
 - Switch between Full-PPR, Half-PPR, and No-PPR
@@ -415,9 +418,9 @@ const chartData = xVals.map((x) => ({
 ### Planned Features
 - [x] Analytics integration (Google Analytics 4) ✅
 - [x] Cookie consent banner for privacy compliance ✅
-- [ ] Adjust chart x-axis to show points in increments of 2 instead of 1
-- [ ] Reduce y-axis ceiling to 30% for better visualization of probability distribution
-- [ ] Add player search functionality in dropdowns
+- [x] Adjust chart x-axis to show points in increments of 2 instead of 1 ✅
+- [x] Dynamic y-axis ceiling (20% default, extends if data exceeds) with 2% tick increments ✅
+- [x] Add player search functionality in dropdowns (react-select with dark theme styling) ✅
 - [ ] Add position filtering (QB, RB, WR, TE)
 - [ ] Add "Share Comparison" feature (URL with query params)
 - [ ] Add weekly projections instead of season-long
