@@ -448,18 +448,25 @@ const mergeSeries = (aSeries, bSeries) => {
 
   const xs = new Set();
   (aSeries || []).forEach((d) => {
-    if (d.x >= 0 && d.x <= 26) xs.add(d.x);
+    if (d.x >= 0) xs.add(d.x);
   });
   (bSeries || []).forEach((d) => {
-    if (d.x >= 0 && d.x <= 26) xs.add(d.x);
+    if (d.x >= 0) xs.add(d.x);
   });
 
   const xVals = Array.from(xs).sort((a, b) => a - b);
-  return xVals.map((x) => ({
+  const merged = xVals.map((x) => ({
     x,
     A: aSeries?.find((d) => d.x === x)?.y ?? null,
     B: bSeries?.find((d) => d.x === x)?.y ?? null,
   }));
+
+  // Filter out points where both players have probability <= 0.1% (no meaningful data)
+  return merged.filter((point) => {
+    const hasDataA = point.A != null && point.A > 0.1;
+    const hasDataB = point.B != null && point.B > 0.1;
+    return hasDataA || hasDataB;
+  });
 };
 
 /* ---------------- App ---------------- */
@@ -480,6 +487,7 @@ export default function App() {
 
   const [menuAOpen, setMenuAOpen] = useState(false);
   const [menuBOpen, setMenuBOpen] = useState(false);
+  const [showChartTooltip, setShowChartTooltip] = useState(false);
 
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1024
@@ -614,6 +622,25 @@ export default function App() {
     [aSeries, bSeries]
   );
 
+  // Calculate max x value (points) from the data where there's meaningful probability
+  const maxXValue = useMemo(() => {
+    if (!chartData.length) return 26;
+
+    // Find the highest x value where either player has probability > 0.1%
+    let maxMeaningfulX = 0;
+    for (const point of chartData) {
+      const hasDataA = point.A != null && point.A > 0.1;
+      const hasDataB = point.B != null && point.B > 0.1;
+      if ((hasDataA || hasDataB) && point.x > maxMeaningfulX) {
+        maxMeaningfulX = point.x;
+      }
+    }
+
+    // Add a small buffer (2 points) and round up to nearest even number
+    const buffered = maxMeaningfulX + 2;
+    return Math.ceil(buffered / 2) * 2;
+  }, [chartData]);
+
   // Calculate max y value to determine if we need to extend y-axis beyond 20%
   const maxYValue = useMemo(() => {
     if (!chartData.length) return 20;
@@ -637,19 +664,33 @@ export default function App() {
     return ticks;
   }, [maxYValue]);
 
-  // Responsive x-axis ticks based on screen size
+  // Responsive x-axis ticks based on screen size and dynamic max value
   const xAxisTicks = useMemo(() => {
+    const ticks = [];
+    let interval;
+
     if (windowWidth < 480) {
-      // Mobile: every 6 points
-      return [0, 6, 12, 18, 24];
+      // Mobile: larger intervals for readability
+      interval = Math.max(6, Math.ceil(maxXValue / 5));
     } else if (windowWidth < 768) {
-      // Tablet: every 4 points
-      return [0, 4, 8, 12, 16, 20, 24];
+      // Tablet: medium intervals
+      interval = Math.max(4, Math.ceil(maxXValue / 7));
     } else {
       // Desktop: every 2 points
-      return [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26];
+      interval = 2;
     }
-  }, [windowWidth]);
+
+    for (let i = 0; i <= maxXValue; i += interval) {
+      ticks.push(i);
+    }
+
+    // Ensure the max value is included if not already
+    if (ticks[ticks.length - 1] !== maxXValue) {
+      ticks.push(maxXValue);
+    }
+
+    return ticks;
+  }, [windowWidth, maxXValue]);
 
   const aMedian = projA ? Number(projA[scoringMeta.medianKey]) : null;
   const bMedian = projB ? Number(projB[scoringMeta.medianKey]) : null;
@@ -796,7 +837,53 @@ export default function App() {
 
             {/* RIGHT: chart */}
             <div className="card chart-card">
-              <div className="card-title">Score Distribution</div>
+              <div className="card-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                Score Distribution
+                <div
+                  className="chart-info-icon"
+                  onMouseEnter={() => setShowChartTooltip(true)}
+                  onMouseLeave={() => setShowChartTooltip(false)}
+                  onClick={() => setShowChartTooltip(!showChartTooltip)}
+                  style={{ position: "relative", cursor: "help" }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ color: "#94a3b8" }}
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M12 16v-4m0-4h.01"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  {showChartTooltip && (
+                    <div className="chart-tooltip">
+                      <strong>How to read this chart:</strong>
+                      <ul>
+                        <li><strong>Higher curve</strong> = more likely score</li>
+                        <li><strong>Dashed lines</strong> = median projections</li>
+                        <li><strong>Wider shape</strong> = more variance/risk</li>
+                        <li><strong>Narrower shape</strong> = consistent scoring</li>
+                      </ul>
+                      <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>
+                        Shows probability of each score using Monte Carlo simulations.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
               {!aSeries && !bSeries ? (
                 <div className="muted">No distribution available.</div>
               ) : (
@@ -823,7 +910,7 @@ export default function App() {
                       <XAxis
                         type="number"
                         dataKey="x"
-                        domain={[0, 26]}
+                        domain={[0, maxXValue]}
                         ticks={xAxisTicks}
                         allowDecimals={false}
                         allowDataOverflow={false}
@@ -875,14 +962,14 @@ export default function App() {
                         align="center"
                         wrapperStyle={{ paddingTop: 30 }}
                       />
-                      {Number.isFinite(aMedian) && aMedian <= 26 && (
+                      {Number.isFinite(aMedian) && aMedian <= maxXValue && (
                         <ReferenceLine
                           x={aMedian}
                           stroke={strokeA}
                           strokeDasharray="4 4"
                         />
                       )}
-                      {Number.isFinite(bMedian) && bMedian <= 26 && (
+                      {Number.isFinite(bMedian) && bMedian <= maxXValue && (
                         <ReferenceLine
                           x={bMedian}
                           stroke={strokeB}
