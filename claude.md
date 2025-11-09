@@ -466,6 +466,8 @@ const chartData = xVals.map((x) => ({
 - [x] Adjust chart x-axis to show points in increments of 2 instead of 1 ✅
 - [x] Dynamic y-axis ceiling (20% default, extends if data exceeds) with 2% tick increments ✅
 - [x] Add player search functionality in dropdowns (react-select with dark theme styling) ✅
+- [x] Fully dynamic x-axis and y-axis based on actual player data (filters out low probability values) ✅
+- [x] Informative chart tooltip with hover/click functionality to help users interpret distributions ✅
 - [ ] Add position filtering (QB, RB, WR, TE)
 - [ ] Add "Share Comparison" feature (URL with query params)
 - [ ] Add weekly projections instead of season-long
