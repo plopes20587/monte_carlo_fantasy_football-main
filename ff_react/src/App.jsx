@@ -448,10 +448,12 @@ const mergeSeries = (aSeries, bSeries) => {
 
   const xs = new Set();
   (aSeries || []).forEach((d) => {
-    if (d.x >= 0) xs.add(d.x);
+    // Cap data at x=30 to prevent lines from extending too far
+    if (d.x >= 0 && d.x <= 30) xs.add(d.x);
   });
   (bSeries || []).forEach((d) => {
-    if (d.x >= 0) xs.add(d.x);
+    // Cap data at x=30 to prevent lines from extending too far
+    if (d.x >= 0 && d.x <= 30) xs.add(d.x);
   });
 
   const xVals = Array.from(xs).sort((a, b) => a - b);
@@ -638,7 +640,10 @@ export default function App() {
 
     // Add a small buffer (2 points) and round up to nearest even number
     const buffered = maxMeaningfulX + 2;
-    return Math.ceil(buffered / 2) * 2;
+    const calculated = Math.ceil(buffered / 2) * 2;
+
+    // Cap the x-axis at 30 to prevent lines from appearing too flat
+    return Math.min(calculated, 30);
   }, [chartData]);
 
   // Calculate max y value to determine if we need to extend y-axis beyond 20%

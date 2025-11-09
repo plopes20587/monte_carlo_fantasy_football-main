@@ -458,19 +458,19 @@
 
   /* Adjust tooltip for mobile */
   .chart-tooltip {
-    width: 300px;
-    max-width: calc(100vw - 24px);
+    width: 90vw;
+    max-width: 320px;
     font-size: 13px;
     padding: 12px;
-    left: auto;
-    right: 0;
-    transform: none;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
   }
 
   .chart-tooltip::before,
   .chart-tooltip::after {
-    left: auto;
-    right: 10px;
-    transform: none;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
   }
 }
