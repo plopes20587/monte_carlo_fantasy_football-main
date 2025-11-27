@@ -15,9 +15,17 @@ node_modules/
 **/node_modules/
 .vite/
 ff_react/dist/
+# Environment files with credentials (NEVER commit these)
 .env
-.env.*
+.env.local
+.env.development
+.env.production
+.env.test
 *.local
+
+# BUT allow .env.example files (safe templates without credentials)
+!.env.example
+!**/.env.example
 .vscode/
 .idea/
 Thumbs.db
@@ -28,6 +36,3 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.log
-
-# local env
-*.env.local
