@@ -2,6 +2,11 @@ import os
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local development)
+# In production (Render), environment variables are set in the dashboard
+load_dotenv()
 
 app = FastAPI()
 
