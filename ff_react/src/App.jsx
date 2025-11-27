@@ -28,6 +28,12 @@ const API_BASE = import.meta.env.PROD
   ? import.meta.env.VITE_API_BASE || ""
   : import.meta.env.VITE_API_BASE || "/api";
 
+// Regex rules for matching stat fields (DRY: used in both stat rows and QB detection)
+const PASS_YARDS_RULES = {
+  include: [/passing?/, /(yard|yds?)/],
+  exclude: [/rec|rush|sample|chart/],
+};
+
 const BASE_STAT_ROWS = [
   {
     label: "pass tds",
@@ -67,10 +73,7 @@ const BASE_STAT_ROWS = [
   },
   {
     label: "pass yards",
-    rules: {
-      include: [/passing?/, /(yard|yds?)/],
-      exclude: [/rec|rush|sample|chart/],
-    },
+    rules: PASS_YARDS_RULES, // Reuse constant for consistency
   },
 ];
 
@@ -443,17 +446,17 @@ const buildSeries = (projection, chartKey) => {
   return series.length ? series : null;
 };
 
-const mergeSeries = (aSeries, bSeries) => {
+const mergeSeries = (aSeries, bSeries, maxCap = 30) => {
   if (!aSeries && !bSeries) return [];
 
   const xs = new Set();
   (aSeries || []).forEach((d) => {
-    // Cap data at x=30 to prevent lines from extending too far
-    if (d.x >= 0 && d.x <= 30) xs.add(d.x);
+    // Cap data based on position (QB=30, others=20)
+    if (d.x >= 0 && d.x <= maxCap) xs.add(d.x);
   });
   (bSeries || []).forEach((d) => {
-    // Cap data at x=30 to prevent lines from extending too far
-    if (d.x >= 0 && d.x <= 30) xs.add(d.x);
+    // Cap data based on position (QB=30, others=20)
+    if (d.x >= 0 && d.x <= maxCap) xs.add(d.x);
   });
 
   const xVals = Array.from(xs).sort((a, b) => a - b);
@@ -515,7 +518,10 @@ export default function App() {
       setA(players[0].id);
       setB(players[1].id);
     }
-  }, [players]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // NOTE: Intentionally omit 'a' and 'b' - we only want auto-selection on initial load,
+    // not when players manually change selections
+  }, [players]);
 
   // Load projections when selections change
   useEffect(() => {
@@ -619,14 +625,32 @@ export default function App() {
     [projB, scoringMeta.chartKey]
   );
 
+  // Determine if either player is a QB by checking for pass_yds field
+  const isEitherPlayerQB = useMemo(() => {
+    // Use the same regex pattern as the "pass yards" stat row (DRY principle)
+    const passYardsA = resolveByRegexFlat(projA, PASS_YARDS_RULES);
+    const passYardsB = resolveByRegexFlat(projB, PASS_YARDS_RULES);
+
+    // If either player has passing yards > 0, they're a QB
+    const yardsA = passYardsA != null ? Number(passYardsA) : 0;
+    const yardsB = passYardsB != null ? Number(passYardsB) : 0;
+
+    return yardsA > 0 || yardsB > 0;
+  }, [projA, projB]);
+
+  // Set position-based cap: 30 for QBs, 20 for other positions
+  const positionBasedCap = useMemo(() => {
+    return isEitherPlayerQB ? 30 : 20;
+  }, [isEitherPlayerQB]);
+
   const chartData = useMemo(
-    () => mergeSeries(aSeries, bSeries),
-    [aSeries, bSeries]
+    () => mergeSeries(aSeries, bSeries, positionBasedCap),
+    [aSeries, bSeries, positionBasedCap]
   );
 
-  // Calculate max x value (points) from the data where there's meaningful probability
+  // Calculate max x value dynamically based on the highest points in the data
   const maxXValue = useMemo(() => {
-    if (!chartData.length) return 26;
+    if (!chartData.length) return positionBasedCap;
 
     // Find the highest x value where either player has probability > 0.1%
     let maxMeaningfulX = 0;
@@ -638,26 +662,28 @@ export default function App() {
       }
     }
 
-    // Add a small buffer (2 points) and round up to nearest even number
+    // Add a small buffer (2 points) and round up to nearest even number for clean ticks
     const buffered = maxMeaningfulX + 2;
-    const calculated = Math.ceil(buffered / 2) * 2;
+    const rounded = Math.ceil(buffered / 2) * 2;
 
-    // Cap the x-axis at 30 to prevent lines from appearing too flat
-    return Math.min(calculated, 30);
-  }, [chartData]);
+    // Ensure minimum of 10 for reasonable chart display, but cap at position-based maximum
+    const withMinimum = Math.max(rounded, 10);
+    return Math.min(withMinimum, positionBasedCap);
+  }, [chartData, positionBasedCap]);
 
-  // Calculate max y value to determine if we need to extend y-axis beyond 20%
+  // Calculate max y value dynamically based on the highest percentage in the data
   const maxYValue = useMemo(() => {
     if (!chartData.length) return 20;
     const maxA = Math.max(...chartData.map((d) => d.A ?? 0));
     const maxB = Math.max(...chartData.map((d) => d.B ?? 0));
     const maxVal = Math.max(maxA, maxB);
 
-    // If max exceeds 20%, round up to nearest 10
-    if (maxVal > 20) {
-      return Math.ceil(maxVal / 10) * 10;
-    }
-    return 20;
+    // Add a small buffer (2%) and round up to nearest even number for clean ticks
+    const buffered = maxVal + 2;
+    const rounded = Math.ceil(buffered / 2) * 2;
+
+    // Ensure minimum of 10% for reasonable chart display
+    return Math.max(rounded, 10);
   }, [chartData]);
 
   // Generate ticks dynamically based on max value

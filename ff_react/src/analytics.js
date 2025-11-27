@@ -75,15 +75,10 @@ export const trackPlayerComparison = (playerA, playerB, scoringFormat) => {
   if (!hasConsent()) return;
 
   try {
-    trackEvent(
-      "Player Comparison",
-      "compare",
-      `${playerA} vs ${playerB}`,
-      null
-    );
     ReactGA.event({
       category: "Player Comparison",
       action: "compare",
+      label: `${playerA} vs ${playerB}`,
       player_a: playerA,
       player_b: playerB,
       scoring_format: scoringFormat,

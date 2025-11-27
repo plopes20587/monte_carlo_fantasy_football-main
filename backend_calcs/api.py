@@ -2,31 +2,32 @@ import os
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
-import json
 
 app = FastAPI()
 
-# CORS configuration
+# CORS configuration - Only allow specific trusted origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "https://monte-carlo-fantasy-football-main-front.onrender.com",  # Add your actual frontend URL
-        "*"  # Temporarily allow all for testing
+        "http://localhost:5173",  # Local development
+        "https://monte-carlo-fantasy-football-main-front.onrender.com",  # Production frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Load Supabase credentials from environment variables
 supabase_url = os.getenv("SUPABASE_URL", "https://bipllavdnhnenirrhjfc.supabase.co")
 supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q")
-supabase: Client = create_client(supabase_url, supabase_key)
 
-# Hardcoded credentials
-#supabase_url = "https://bipllavdnhnenirrhjfc.supabase.co"
-#supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q"
-#supabase: Client = create_client(supabase_url, supabase_key)
+# Ensure required environment variables are set
+if not supabase_url or not supabase_key:
+    raise ValueError(
+        "Missing required environment variables: SUPABASE_URL and SUPABASE_KEY must be set"
+    )
+
+supabase: Client = create_client(supabase_url, supabase_key)
 
 @app.get("/")
 async def root():
@@ -83,11 +84,9 @@ def get_projection(player_id: str = Query(...)):
             )
         
         data = response.data[0]
-        
-        # Transform chart data: pts/pct to x/y (probability mass, not cumulative)
-        # Transform chart data: pts/pct to x/y (convert percentage to simulation counts)
-       # Transform chart data: pts/pct to x/y (keep as percentages)
-        # Transform chart data: pts/pct to x/y (keep as percentages)
+
+        # Transform chart data from database format (pts/pct) to API format (x/y)
+        # Percentages are kept as-is (y = percentage value)
         def transform_chart_data(chart_data):
             if not chart_data:
                 return []
