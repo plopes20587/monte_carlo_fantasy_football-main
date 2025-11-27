@@ -17,14 +17,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load Supabase credentials from environment variables
-supabase_url = os.getenv("SUPABASE_URL", "https://bipllavdnhnenirrhjfc.supabase.co")
-supabase_key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGxsYXZkbmhuZW5pcnJoamZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MDExNzEsImV4cCI6MjA3NTI3NzE3MX0.oW5R9HL9djP4oqJEsFNzZeNqJHmL2M3FJkaytnOCv0Q")
+# Load Supabase credentials from environment variables (NO defaults for security)
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
 
 # Ensure required environment variables are set
 if not supabase_url or not supabase_key:
     raise ValueError(
-        "Missing required environment variables: SUPABASE_URL and SUPABASE_KEY must be set"
+        "Missing required environment variables: SUPABASE_URL and SUPABASE_KEY must be set. "
+        "Please check your .env file or deployment environment variables."
     )
 
 supabase: Client = create_client(supabase_url, supabase_key)
